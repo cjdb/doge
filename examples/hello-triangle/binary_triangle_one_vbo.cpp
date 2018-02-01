@@ -16,12 +16,12 @@
 #include <gl/gl_core.hpp>
 #include <doge/engine.hpp>
 #include <doge/gl/vertex_array.hpp>
-#include <doge/gl/vertex_buffer.hpp>
 #include <doge/gl/shader_binary.hpp>
 #include <doge/gl/shader_source.hpp>
 #include <doge/utility/screen_data.hpp>
 #include <doge/hid.hpp>
 #include <glm/vec3.hpp>
+#include "../static_objects.hpp"
 #include <vector>
 
 int main()
@@ -31,15 +31,7 @@ int main()
    auto program = doge::shader_binary{{std::make_pair(doge::shader_source::vertex, "vertex.glsl"),
       std::make_pair(doge::shader_source::fragment, "fragment.glsl")}};
 
-   auto vbo = doge::vertex_buffer{1, gl::ARRAY_BUFFER, std::vector<glm::vec3>{
-      { 0.5f,  0.5f, 0.0f},
-      { 1.0f, -0.5f, 0.0f},
-      { 0.0f, -0.5f, 0.0f},
-      {-0.5f,  0.5f, 0.0f},
-      {-1.0f, -0.5f, 0.0f}
-   }};
-   auto vao = doge::vertex_array<float>(0, 3);
-   doge::bind(vao, vbo, gl::STATIC_DRAW);
+   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, binary_triangles, 3, {3}};
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -47,9 +39,11 @@ int main()
       gl::ClearColor(0.2f, 0.3f, 0.4f, 1.0f);
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
-      gl::UseProgram(program);
-      vao.bind();
-      gl::DrawArrays(gl::TRIANGLES, 0, 3);
-      gl::DrawArrays(gl::TRIANGLES, 2, 3);
+     program.use([&vbo]{
+         vbo.bind([&vbo] {
+            vbo.draw(doge::vertex::triangles, 0, 3);
+            vbo.draw(doge::vertex::triangles, 2, 3);
+         });
+     });
    });
 }

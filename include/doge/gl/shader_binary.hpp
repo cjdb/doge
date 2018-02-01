@@ -18,34 +18,31 @@
 
 #include <doge/gl/shader_source.hpp>
 #include <experimental/ranges/concepts>
+#include <experimental/ranges/functional>
 #include <gl/gl_core.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace doge {
+   namespace ranges = std::experimental::ranges;
+
    class shader_binary {
    public:
       shader_binary(const std::vector<std::pair<shader_source::type, std::string>>& paths)
          : shader_binary{compile_shaders(paths)}
       {}
 
-      shader_binary(const std::vector<shader_source>& shaders)
-         : index_{gl::CreateProgram()}
-      {
-         for (const auto& i : shaders)
-            gl::AttachShader(index_, i);
-         gl::LinkProgram(index_);
+      shader_binary(const std::vector<shader_source>& shaders);
 
-         std::experimental::ranges::SignedIntegral successful = 0;
-         if (gl::GetProgramiv(index_, gl::LINK_STATUS, &successful); not successful) {
-            std::experimental::ranges::Regular log = std::string(512, '\0');
-            gl::GetProgramInfoLog(index_, log.size(), nullptr, log.data());
-            throw std::runtime_error{log};
-         }
+      template <ranges::Invocable F>
+      auto use(const F& f) const noexcept
+      {
+         gl::UseProgram(index_);
+         return ranges::invoke(f);
       }
 
-      constexpr operator GLuint() const noexcept
+      explicit operator GLuint() const noexcept
       {
          return index_;
       }
@@ -53,14 +50,7 @@ namespace doge {
       GLuint index_;
 
       std::vector<shader_source>
-      compile_shaders(const std::vector<std::pair<shader_source::type, std::string>>& paths)
-      {
-         std::experimental::ranges::Regular shaders = std::vector<shader_source>{};
-         shaders.reserve(paths.size());
-         for (const auto& i : paths)
-            shaders.emplace_back(i.first, i.second);
-         return shaders;
-      }
+      compile_shaders(const std::vector<std::pair<shader_source::type, std::string>>& paths);
    };
 } // namespace doge
 

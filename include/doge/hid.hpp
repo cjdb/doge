@@ -18,6 +18,7 @@
 
 #include <experimental/ranges/concepts>
 #include <functional>
+#include <gl/gl_core.hpp>
 #include <GLFW/glfw3.h>
 #include <glm/vec2.hpp>
 
@@ -123,7 +124,7 @@ namespace doge::hid {
          disabled = GLFW_CURSOR_DISABLED
       };
 
-      static void init(GLFWwindow* const w, const cursor_type c = cursor_type::hidden,
+      static void init(GLFWwindow* const w, const cursor_type c = cursor_type::disabled,
          const bool buttons = true, const bool cursor = true, const bool scroll = true,
          [[maybe_unused]] const bool enter = false) noexcept
       {
@@ -140,14 +141,24 @@ namespace doge::hid {
          //   glfwSetCursorEnterCallback(w, enter_callback);
       }
 
-      static glm::vec2 cursor(index i) noexcept
+      static [[nodiscard]] glm::vec2 cursor(index i) noexcept
       {
          return cursor_[i];
       }
 
-      static glm::vec2 scroll(index i) noexcept
+      static [[nodiscard]] glm::vec2 scroll(index i) noexcept
       {
          return scroll_[i];
+      }
+
+      static [[nodiscard]] float sensitivity() noexcept
+      {
+         return sensitivity_;
+      }
+
+      static void sensitivity(const float s) noexcept
+      {
+         sensitivity_ = s;
       }
 
       static glm::vec2 cursor_delta() noexcept
@@ -155,15 +166,21 @@ namespace doge::hid {
          return (cursor(current) - cursor(previous)) * sensitivity_;
       }
 
-      glm::vec2 scroll_delta()
+      static glm::vec2 scroll_delta() noexcept
       {
          return scroll(current) - scroll(previous);
+      }
+
+      static void update() noexcept
+      {
+         cursor_[previous] = cursor_[current];
+         scroll_[previous] = scroll_[current];
       }
 
       template <typename F, typename... Args>
       requires
          std::experimental::ranges::Invocable<F, Args...>
-      auto on_cursor_delta(const glm::vec2& d, const F& f, Args&&... args)
+      static auto on_cursor_delta(const glm::vec2& d, const F& f, Args&&... args)
          DOGE_INVOCABLE_NOEXCEPT(f, Args, args)
       {
          return conditionally_invoke(cursor_delta() == d, f, std::forward<Args>(args)...);
@@ -172,7 +189,7 @@ namespace doge::hid {
       template <typename F, typename... Args>
       requires
          std::experimental::ranges::Invocable<F, Args...>
-      auto on_scroll_delta(const glm::vec2& d, const F& f, Args&&... args)
+      static auto on_scroll_delta(const glm::vec2& d, const F& f, Args&&... args)
          DOGE_INVOCABLE_NOEXCEPT(f, Args, args)
       {
          return conditionally_invoke(scroll_delta() == d, f, std::forward<Args>(args)...);
@@ -181,7 +198,7 @@ namespace doge::hid {
       template <typename F, typename... Args>
       requires
          std::experimental::ranges::Invocable<F, Args...>
-      auto on_cursor_position(const glm::vec2& v, const F& f, Args&&... args)
+      static auto on_cursor_position(const glm::vec2& v, const F& f, Args&&... args)
          DOGE_INVOCABLE_NOEXCEPT(f, Args, args)
       {
          return conditionally_invoke(cursor(current) == v, f, std::forward<Args>(args)...);
@@ -190,16 +207,16 @@ namespace doge::hid {
       template <typename F, typename... Args>
       requires
          std::experimental::ranges::Invocable<F, Args...>
-      auto on_scroll_position(const glm::vec2& v, const F& f, Args&&... args)
+      static auto on_scroll_position(const glm::vec2& v, const F& f, Args&&... args)
          DOGE_INVOCABLE_NOEXCEPT(f, Args, args)
       {
          return conditionally_invoke(scroll(current) == v, f, std::forward<Args>(args)...);
       }
    private:
       static inline Regular key_mask_ = std::vector(8, key_state::up);
-      static inline Regular cursor_ = std::array<glm::vec2, 2>{{{0.0f, 0.0f}, {0.0f, 0.0f}}};
-      static inline Regular scroll_ = cursor_;
-      static inline Regular sensitivity_ = 0.5f;
+      static inline Regular cursor_ = std::array<glm::vec2, 2>{{{960.0f, 540.0f}, {960.0f, 540.0f}}};
+      static inline Regular scroll_ = std::array<glm::vec2, 2>{{{0.0f, 0.0f}, {0.0f, 0.0f}}};
+      static inline Regular sensitivity_ = 0.1f;
 
       static void button_callback(GLFWwindow*, int key, int action, int mods) noexcept
       {

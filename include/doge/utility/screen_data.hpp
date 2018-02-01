@@ -18,6 +18,7 @@
 
 #include <gl/gl_core.hpp>
 #include <GLFW/glfw3.h>
+#include <gsl/gsl>
 #include <memory>
 
 namespace doge {
@@ -90,10 +91,16 @@ namespace doge {
       {
          glfwSwapBuffers(window());
       }
+
+      float aspect_ratio() const noexcept
+      {
+         return aspect_ratio_;
+      }
    private:
       backend_t backend_ = backend_t::gl;
       int width_ = 1920;
       int height_ = 1080;
+      float aspect_ratio_ = set_aspect_ratio();
       int antialiasing_ = 4;
       bool fullscreen_ = false;
       std::unique_ptr<GLFWmonitor, void(*)(void*)> monitor_ = []{
@@ -104,6 +111,11 @@ namespace doge {
       }();
       const GLFWvidmode* vidmode_ = glfwGetVideoMode(monitor_.get());
       std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)> window_ = make_window_impl();
+
+      float set_aspect_ratio() const noexcept
+      {
+         return gsl::narrow_cast<float>(width_) / gsl::narrow_cast<float>(height_);
+      }
 
       std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)> make_window_impl()
       {

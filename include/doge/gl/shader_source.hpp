@@ -32,28 +32,15 @@ namespace doge {
          compute = gl::COMPUTE_SHADER
       };
 
-      shader_source(const type t, const std::string& path)
-         : index_{gl::CreateShader(t)}
-      {
-         using std::experimental::ranges::Regular;
-         const Regular source = from_file<std::string>(path);
-         const Regular source_c_str = source.data();
-         gl::ShaderSource(index_, 1, &source_c_str, nullptr);
-         gl::CompileShader(index_);
+      shader_source(const type t, const std::string& path);
 
-         using std::experimental::ranges::SignedIntegral;
-         SignedIntegral successful = 0;
-         if (gl::GetShaderiv(index_, gl::COMPILE_STATUS, &successful); not successful) {
-            Regular log = std::string(512, '\0');
-            gl::GetShaderInfoLog(index_, log.size(), nullptr, log.data());
-            throw std::runtime_error{log};
-         }
-      }
+      shader_source(shader_source&&) = default;
+      shader_source(const shader_source&) = default;
 
-      ~shader_source() noexcept
-      {
-         gl::DeleteShader(index_);
-      }
+      shader_source& operator=(shader_source&&) = default;
+      shader_source& operator=(const shader_source&) = default;
+
+      ~shader_source() noexcept;
 
       constexpr operator GLuint() const noexcept
       {

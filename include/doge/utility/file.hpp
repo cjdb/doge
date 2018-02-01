@@ -16,34 +16,15 @@
 #ifndef DOGE_UTILITY_FILE_IO_HPP
 #define DOGE_UTILITY_FILE_IO_HPP
 
-#include <experimental/ranges/algorithm>
-#include <experimental/ranges/concepts>
-#include <experimental/ranges/iterator>
 //#include <filesystem>
-#include <fstream>
-#include <stdexcept>
 #include <string>
 
 namespace doge {
    template <typename T>
    T from_file(const std::string&);
 
-   template<>
-   std::string from_file<std::string>(const std::string& path)
-   {
-      namespace ranges = std::experimental::ranges;
-      if (auto in = std::ifstream{path}) {
-         in.seekg(0, std::ios::end);
-         ranges::Regular s = std::string(in.tellg(), '\0');
-         in.seekg(0, std::ios::beg);
-
-         ranges::copy(ranges::istreambuf_iterator<char>{in}, ranges::istreambuf_iterator<char>{},
-            ranges::begin(s));
-         return s;
-      }
-
-      throw std::runtime_error{"Unable to open file " + path};
-   }
+   template <>
+   std::string from_file<std::string>(const std::string& path);
 } // namespace doge
 
 #endif // DOGE_UTILITY_FILE_IO_HPP

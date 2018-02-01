@@ -24,29 +24,54 @@
 #include <GLFW/glfw3.h>
 
 namespace doge {
+   namespace ranges = std::experimental::ranges;
+
    class engine {
    public:
       engine()
       {
          doge::hid::keyboard::init(screen_.window());
+         doge::hid::mouse::init(screen_.window());
       }
 
-      template <std::experimental::ranges::Invocable F>
+      template <ranges::Invocable F>
       void play(const F& logic)
       {
          while (screen_.open()) {
-            std::experimental::ranges::invoke(logic);
+            compute_frame_displacement();
+            ranges::invoke(logic);
+            hid::mouse::update();
             screen_.swap_buffers();
             glfwPollEvents();
          }
+      }
+
+      const screen_data& screen() const noexcept
+      {
+         return screen_;
       }
 
       void close() noexcept
       {
          screen_.close();
       }
+
+      [[nodiscard]] static ranges::Regular frame_displacement() noexcept
+      {
+         return frame_displacement_;
+      }
    private:
       screen_data screen_;
+      static inline float previous_frame_ = glfwGetTime();
+      static inline float frame_displacement_ = 0.0f;
+
+      static void compute_frame_displacement() noexcept
+      {
+         const ranges::Regular current_frame = glfwGetTime();
+         const ranges::Regular displacement = current_frame - previous_frame_;
+         previous_frame_ = current_frame;
+         frame_displacement_ = displacement;
+      }
    };
 } // namespace doge
 

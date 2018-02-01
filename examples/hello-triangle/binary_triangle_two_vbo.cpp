@@ -16,13 +16,15 @@
 #include <gl/gl_core.hpp>
 #include <doge/engine.hpp>
 #include <doge/gl/vertex_array.hpp>
-#include <doge/gl/vertex_buffer.hpp>
 #include <doge/gl/shader_binary.hpp>
 #include <doge/gl/shader_source.hpp>
 #include <doge/utility/screen_data.hpp>
 #include <doge/hid.hpp>
 #include <glm/vec3.hpp>
+#include "../static_objects.hpp"
 #include <vector>
+
+namespace ranges = std::experimental::ranges;
 
 int main()
 {
@@ -35,24 +37,10 @@ int main()
            std::make_pair(doge::shader_source::fragment, "yellow.glsl")}}
    };
 
-   auto vbo = std::vector<doge::vertex_buffer>{
-      {1, gl::ARRAY_BUFFER, std::vector<glm::vec3>{
-         { 0.5f,  0.5f, 0.0f},
-         { 1.0f, -0.5f, 0.0f},
-         { 0.0f, -0.5f, 0.0f}
-      }},
-      {1, gl::ARRAY_BUFFER, std::vector<glm::vec3>{
-         { 0.0f, -0.5f, 0.0f},
-         {-0.5f,  0.5f, 0.0f},
-         {-1.0f, -0.5f, 0.0f}
-      }}
+   auto vbo = std::vector<doge::vertex>{
+      {gl::ARRAY_BUFFER, gl::STATIC_DRAW, triangle[0], 3, {3}},
+      {gl::ARRAY_BUFFER, gl::STATIC_DRAW, triangle[1], 3, {3}}
    };
-
-   auto vao = std::vector<doge::vertex_array<float>>{{0, 3}, {0, 3}};
-
-   using std::experimental::ranges::Integral;
-   for (Integral i = decltype(vao.size()){}; i != vao.size() && i != vbo.size(); ++i)
-      doge::bind(vao[i], vbo[i], gl::STATIC_DRAW);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -60,10 +48,13 @@ int main()
       gl::ClearColor(0.2f, 0.3f, 0.4f, 1.0f);
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
-      for (Integral i = decltype(vao.size()){}; i != vao.size() && i != shaders.size(); ++i) {
-         gl::UseProgram(shaders[i]);
-         vao[i].bind();
-         gl::DrawArrays(gl::TRIANGLES, 0, 3);
+      using std::experimental::ranges::Integral;
+      for (Integral i = decltype(vbo.size()){}; i != vbo.size() && i != shaders.size(); ++i) {
+         shaders[i].use([i, &vbo]{
+            vbo[i].bind([i, &vbo]{
+               vbo[i].draw(doge::vertex::triangles, 0, 3);
+            });
+         });
       }
    });
 }
