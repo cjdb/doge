@@ -40,22 +40,6 @@ namespace {
    }
 } // namespace <anonymous>
 
-template <typename T1, typename T2, ranges::Predicate<bool> F = bool(&)(bool)>
-void check_equivalent(const T1& a, const T2& b, const F& f = identity) noexcept
-{
-   CHECK(ranges::invoke(f, a == b));
-   CHECK(not ranges::invoke(f, a != b));
-}
-
-template <typename T1, typename T2, ranges::Predicate<bool> F1, ranges::Predicate<bool> F2>
-void check_strict_total_order(const T1& a, const T2& b, const F1& f1, const F2& f2) noexcept
-{
-   CHECK(ranges::invoke(f1, a < b));
-   CHECK(ranges::invoke(f2, a <= b));
-   CHECK(ranges::invoke(f2, b >= a));
-   CHECK(ranges::invoke(f1, b > a));
-}
-
 template <typename A, typename B, typename T1, typename T2, typename F>
 void check_binary_arithmetic_operation_impl(const F& f, const T1& a, const T2& b) noexcept
 {
@@ -92,45 +76,48 @@ void check_binary_arithmetic_operation(const F& f, const doge::uniform<T1>& a,
    check_binary_arithmetic_operation_impl<T2, T1>(f, b, a);
 }
 
+template <typename T>
+void check_is_same_on_device(const doge::uniform<T>& u, const doge::shader_binary& program,
+   const std::string_view name) noexcept
+{
+   const auto device = doge::uniform<const T>{program, name};
+   CHECK(u == device);
+}
+
 template <typename T1, typename T2>
 void check_compound_assignment(doge::uniform<T1>& a, const T2& b,
    const doge::shader_binary& program, const uniform<T1>& first)
 {
-   const auto check_same_on_device = [&program, &first](const auto& a) {
-      const auto device = doge::uniform<const T1>{program, first.name};
-      CHECK(a == device);
-   };
-
    {
       const auto expected = a + b;
       a += b;
       CHECK(a == expected);
-      check_same_on_device(a);
+      check_is_same_on_device(a, program, first.name);
    }
    {
       const auto expected = a - b;
       a -= b;
       CHECK(a == expected);
-      check_same_on_device(a);
+      check_is_same_on_device(a, program, first.name);
    }
    {
       const auto expected = a * b;
       a *= b;
       CHECK(a == expected);
-      check_same_on_device(a);
+      check_is_same_on_device(a, program, first.name);
    }
    {
       const auto expected = a / b;
       a /= b;
       CHECK(a == expected);
-      check_same_on_device(a);
+      check_is_same_on_device(a, program, first.name);
    }
 
    if constexpr (std::is_integral_v<T1> ) {
       const auto expected = a % b;
       a %= b;
       CHECK(a == expected);
-      check_same_on_device(a);
+      check_is_same_on_device(a, program, first.name);
    }
 }
 
@@ -149,7 +136,7 @@ auto check_constructor(const doge::shader_binary& program, const ::uniform<T>& u
    CHECK_THROWS(doge::uniform<T>{program, "dne", u.value});
    CHECK_THROWS(doge::uniform<const T>{program, "dne"});
 
-   return std::make_pair(a, c);
+   return std::make_pair(std::move(a), std::move(c));
 }
 
 template <typename T1, typename T2, typename T3, typename T4>
@@ -189,96 +176,128 @@ void check_equivalent(const T1& eq1, const T2& eq2, const T3& eq3, const T4& neq
    CHECK(not (eq1 != eq3));
 }
 
-template <typename T>
-void check_scalar(const doge::shader_binary& program, const std::array<uniform<T>, 2> u)
+template <typename T1, typename T2, typename T3, typename T4, typename T5>
+void check_strict_total_order(const T1& low1, const T2& low2, const T3& low3, const T4& mid,
+   const T5& high) noexcept
 {
-   const auto [first, second] = u;
-   auto [a, const_a] = check_constructor(program, first);
-   auto [b, const_b] = check_constructor(program, second);
-
-   SECTION("[uniform.scalar.comparison]") {
-      auto a_equivalent = std::array{check_constructor(program, first),
-         check_constructor(program, first)};
-
-      check_equivalent(a, a_equivalent[0].first, a_equivalent[1].second, b);
-      check_equivalent(a, a_equivalent[0].second, a_equivalent[1].second, const_b);
-   }
-
-   SECTION("[uniform.scalar.assignment]") {
-      // test assignment
-      a = second.value;
-      const auto cd = doge::uniform<const T>{program, first.name};
-      check_equivalent(a, cd);
-
-      // test equivalent to T
-      check_equivalent(a, second.value);
-      check_equivalent(second.value, a);
-
-      // test equivalent via strict total order (const T)
-      check_strict_total_order(a, second.value, std::logical_not<>{}, identity);
-      check_strict_total_order(second.value, a, std::logical_not<>{}, identity);
-
-      // test equivalent to T
-      check_equivalent(cd, second.value);
-      check_equivalent(second.value, cd);
-
-      // test equivalent via strict total order (const T)
-      check_strict_total_order(cd, second.value, std::logical_not<>{}, identity);
-      check_strict_total_order(second.value, cd, std::logical_not<>{}, identity);
-   }
-
-   SECTION("[uniform.scalar.arithmetic]") {
-      a = first.value + first.value;
-      const auto b = doge::uniform<const T>{program, first.name};
-      constexpr auto n = T(10);
-      {
-         check_equivalent(+a, static_cast<T>(a));
-         check_equivalent(+b, static_cast<T>(b));
-         check_equivalent(-a, -static_cast<T>(a));
-         check_equivalent(-b, -static_cast<T>(b));
-      }
-      {
-         auto expected = static_cast<T>(a);
-         CHECK(++a == ++expected);
-         CHECK(a++ == expected++);
-         CHECK(a == expected); // make sure the result actually increased.
-
-         CHECK(--a == --expected);
-         CHECK(a-- == expected--);
-         CHECK(a == expected); // make sure the result actually decreased.
+   const auto check_strict_order = [](auto f, const auto& a, const auto& b,
+      const auto& c) noexcept {
+      if (not std::is_same_v<decltype(f), std::less_equal<>> &&
+         not std::is_same_v<decltype(f), std::greater_equal<>>) {
+         // check anti-reflexivity
+         CHECK(not ranges::invoke(f, a, a));
       }
 
-      check_compound_assignment(a, doge::uniform{program, second.name, second.value}, program,
-         first);
-      check_compound_assignment(a, doge::uniform<const T>{program, second.name}, program, first);
-      check_compound_assignment(a, n, program, first);
+      // check anti-symmetry
+      CHECK(ranges::invoke(f, a, b));
+      CHECK(not ranges::invoke(f, b, a));
 
-      auto check_binary_arithmetic = [&](const auto& f) {
-         check_binary_arithmetic_operation(f, a, n);
-         check_binary_arithmetic_operation(f, a, a);
-         check_binary_arithmetic_operation(f, a, b);
-      };
+      // check transitivity
+      CHECK(ranges::invoke(f, b, c));
+      CHECK(ranges::invoke(f, a, c));
+   };
 
-      check_binary_arithmetic(std::plus<>{});
-      check_binary_arithmetic(std::minus<>{});
-      check_binary_arithmetic(std::multiplies<>{});
+   check_strict_order(std::less<>{}, low1, mid, high);
+   check_strict_order(std::less_equal<>{}, low1, mid, high);
+   check_strict_order(std::greater_equal<>{}, high, mid, low1);
+   check_strict_order(std::greater<>{}, high, mid, low1);
+
+   const auto check_equivalent = [](const auto& f, const auto& a, const auto& b,
+      const auto& c) noexcept {
+      // reflexivity
+      CHECK(ranges::invoke(f, a, a));
+
+      // symmetry
+      CHECK(ranges::invoke(f, a, b));
+      CHECK(ranges::invoke(f, b, a));
+
+      // transitivity
+      CHECK(ranges::invoke(f, b, c));
+      CHECK(ranges::invoke(f, a, c));
+   };
+
+   check_equivalent(std::less_equal<>{}, low1, low2, low3);
+   check_equivalent(std::greater_equal<>{}, low1, low2, low3);
+}
+
+template <typename T>
+void check_arithmetic(doge::uniform<T>& a, const doge::shader_binary& program,
+   const uniform<T> first, const uniform<T> second) noexcept
+{
+   a = first.value + first.value;
+   const auto b = doge::uniform<const T>{program, first.name};
+   constexpr auto n = T(10);
+   {
+      CHECK(+a == static_cast<T>(a));
+      CHECK(+b == static_cast<T>(b));
+      CHECK(-a == -static_cast<T>(a));
+      CHECK(-b == -static_cast<T>(b));
+   }
+   {
+      auto expected = static_cast<T>(a);
+      CHECK(++a == ++expected);
+      CHECK(a++ == expected++);
+      CHECK(a == expected); // make sure the result actually increased.
+
+      CHECK(--a == --expected);
+      CHECK(a-- == expected--);
+      CHECK(a == expected); // make sure the result actually decreased.
+   }
+
+   check_compound_assignment(a, doge::uniform{program, second.name, second.value}, program, first);
+   check_compound_assignment(a, doge::uniform<const T>{program, second.name}, program, first);
+   check_compound_assignment(a, n, program, first);
+
+   auto check_binary_arithmetic = [&](const auto& f) {
+      check_binary_arithmetic_operation(f, a, n);
+      check_binary_arithmetic_operation(f, a, a);
+      check_binary_arithmetic_operation(f, a, b);
+   };
+
+   check_binary_arithmetic(std::plus<>{});
+   check_binary_arithmetic(std::minus<>{});
+   check_binary_arithmetic(std::multiplies<>{});
+
+   if constexpr (not doge::detail::is_glm_matrix_v<T>) {
       check_binary_arithmetic(std::divides<>{});
 
       if constexpr (std::is_integral_v<T>) {
          check_binary_arithmetic(std::modulus<>{});
       }
    }
-
-   CHECK_THROWS(doge::uniform<GLfloat>{program, "float_dne", first.value});
 }
 
-template <typename T, typename U>
-// requires
-//    RingWith<T, U>
-void check_is_ring_with(const T& a, U& b) noexcept
+template <typename T>
+void check_scalar(const doge::shader_binary& program, const std::array<uniform<T>, 3> u)
 {
-   check_binary_arithmetic_operation(std::plus<>{}, a, b);
-   check_binary_arithmetic_operation(std::multiplies<>{}, a, b);
+   const auto [first, second, third] = u;
+   auto [a, const_a] = check_constructor(program, first);
+   auto [b, const_b] = check_constructor(program, second);
+   auto [c, const_c] = check_constructor(program, third);
+
+   SECTION("[uniform.scalar.comparison]") {
+      auto a_equivalent = std::array{check_constructor(program, first),
+         check_constructor(program, first)};
+
+      check_equivalent(a, a_equivalent[0].first, a_equivalent[1].first, b);
+      check_equivalent(a, a_equivalent[0].second, first.value, const_b);
+
+      check_strict_total_order(a, a_equivalent[0].first, a_equivalent[1].first, b, c);
+      check_strict_total_order(a, a_equivalent[0].second, first.value, const_b, third.value);
+   }
+
+   SECTION("[uniform.scalar.assignment]") {
+      // test assignment
+      a = second.value;
+      check_is_same_on_device(a, program, first.name);
+
+      // test equivalent to T
+      CHECK(a == second.value);
+   }
+
+   SECTION("[uniform.scalar.arithmetic]") {
+      check_arithmetic(a, program, first, second);
+   }
 }
 
 template <int N, typename T>
@@ -296,15 +315,18 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
    program.use([&program]{
       SECTION("[uniform.scalar]") {
          SECTION("[uniform.scalar.GLfloat]") {
-            check_scalar(program, std::array<uniform<GLfloat>, 2>{{{"f.a", 0.05f}, {"f.b", 0.5f}}});
+            check_scalar(program, std::array<uniform<GLfloat>, 3>{{{"f.a", 0.05f}, {"f.b", 0.5f},
+               {"f.c", 5.0f}}});
          }
 
          SECTION("[uniform.scalar.GLint]") {
-            check_scalar(program, std::array<uniform<GLint>, 2>{{{"i.a", -32767}, {"i.b", 65536}}});
+            check_scalar(program, std::array<uniform<GLint>, 3>{{{"i.a", -32'767}, {"i.b", 65'536},
+               {"i.c", 650'356}}});
          }
 
          SECTION("Testing GLuint", "[uniform.scalar.GLuint]") {
-            check_scalar(program, std::array<uniform<GLuint>, 2>{{{"u.a", 15u}, {"u.b", 16u}}});
+            check_scalar(program, std::array<uniform<GLuint>, 3>{{{"u.a", 15u}, {"u.b", 16u},
+               {"u.c", 352u}}});
          }
       }
 
