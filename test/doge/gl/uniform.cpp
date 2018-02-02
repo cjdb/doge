@@ -112,7 +112,6 @@ void check_compound_assignment(doge::uniform<T1>& a, const T2& b,
       a -= b;
       CHECK(a == expected);
       check_same_on_device(a);
-      a = b;
    }
    {
       const auto expected = a * b;
@@ -136,72 +135,73 @@ void check_compound_assignment(doge::uniform<T1>& a, const T2& b,
 }
 
 template <typename T>
-void check_scalar(const doge::shader_binary& program, const std::array<::uniform<T>, 2> scalar)
+auto check_constructor(const doge::shader_binary& program, const ::uniform<T>& u)
 {
-   const auto first = scalar[0];
+   StrictTotallyOrdered a = doge::uniform<T>{program, u.name, u.value};
+   StrictTotallyOrdered b = doge::uniform{program, u.name, u.value};
 
-   auto a = doge::uniform{program, first.name, first.value};
-   CHECK(static_cast<T>(a) == first.value);
+   static_assert(std::is_same_v<decltype(a), decltype(b)>);
+   CHECK(static_cast<T>(a) == static_cast<T>(b));
 
-   const auto second = scalar[1];
-   (void)second;
+   StrictTotallyOrdered c = doge::uniform<const T>{program, u.name};
+   CHECK(static_cast<T>(a) == static_cast<T>(c));
+
+   CHECK_THROWS(doge::uniform<T>{program, "dne", u.value});
+   CHECK_THROWS(doge::uniform<const T>{program, "dne"});
+
+   return std::make_pair(a, c);
+}
+
+template <typename T1, typename T2, typename T3, typename T4>
+void check_equivalent(const T1& eq1, const T2& eq2, const T3& eq3, const T4& neq) noexcept
+{
+   // test reflexivity on operator==
+   CHECK(eq1 == eq1);
+
+   // test symmetry on operator==
+   CHECK(eq1 == eq2);
+   CHECK(not (eq1 == neq));
+
+   CHECK(eq2 == eq1);
+   CHECK(not (neq == eq1));
+
+   // test transitivity on operator==
+   CHECK(eq2 == eq3);
+   CHECK(not (eq2 == neq));
+   CHECK(eq1 == eq3);
+   CHECK(not (neq == eq3));
+
+   // test anti-reflexivity on operator!=
+   CHECK(not (eq1 != eq1)); 
+
+   // test symmetry on operator!=
+   CHECK(eq1 != neq);
+   CHECK(not (eq1 != eq2));
+
+   CHECK(neq != eq1);
+   CHECK(not (eq2 != eq1));
+
+   // test transitivity on operator!=
+   CHECK(eq2 != neq);
+   CHECK(not (eq2 != eq3));
+
+   CHECK(eq3 != neq);
+   CHECK(not (eq1 != eq3));
+}
+
+template <typename T>
+void check_scalar(const doge::shader_binary& program, const std::array<uniform<T>, 2> u)
+{
+   const auto [first, second] = u;
+   auto [a, const_a] = check_constructor(program, first);
+   auto [b, const_b] = check_constructor(program, second);
+
    SECTION("[uniform.scalar.comparison]") {
-      // test operator== reflexivity
-      check_equivalent(a, a);
+      auto a_equivalent = std::array{check_constructor(program, first),
+         check_constructor(program, first)};
 
-      // test copy constructor and operator== symmetry
-      auto b = doge::uniform{program, first.name, first.value}; // STO
-      check_equivalent(a, b);
-      check_equivalent(b, a);
-
-      // test operator== transitivity
-      auto c = doge::uniform{program, first.name, first.value}; // STO
-      check_equivalent(b, c);
-      check_equivalent(a, c);
-
-      // test equivalent via total order (T)
-      check_strict_total_order(a, b, std::logical_not<>{}, identity);
-      check_strict_total_order(b, a, std::logical_not<>{}, identity);
-
-      // test `const T` against T
-      const auto ca = doge::uniform<const T>{program, first.name}; // STO
-      CHECK(static_cast<T>(ca) == first.value);
-
-      // test operator==<const T> reflexivity
-      check_equivalent(ca, ca);
-
-      // test operator==<const T> symmetry
-      const auto cb = doge::uniform<const T>{program, first.name}; // STO
-      check_equivalent(ca, cb);
-      check_equivalent(cb, ca);
-
-      // test operator==<const T, T> symmetry
-      check_equivalent(ca, a);
-      check_equivalent(a, ca);
-
-      // test operator==<const T> transitivity
-      const auto cc = doge::uniform<const T>{program, first.name}; // STO
-      check_equivalent(cb, cc);
-      check_equivalent(ca, cc);
-
-      // test operator<const T, T> transitivity
-      check_equivalent(cb, b);
-      check_equivalent(ca, b);
-
-      // test equivalent via strict total order (const T)
-      check_strict_total_order(ca, cb, std::logical_not<>{}, identity);
-      check_strict_total_order(cb, ca, std::logical_not<>{}, identity);
-
-      // test equivalent via strict total order (const T, T)
-      check_strict_total_order(ca, a, std::logical_not<>{}, identity);
-      check_strict_total_order(a, ca, std::logical_not<>{}, identity);
-
-      // test strict total order
-      auto d = doge::uniform{program, second.name, second.value}; // STO
-      CHECK(static_cast<T>(d) == second.value);
-
-      check_strict_total_order(a, d, identity, identity);
-      check_strict_total_order(d, a, std::logical_not<>{}, std::logical_not<>{});
+      check_equivalent(a, a_equivalent[0].first, a_equivalent[1].second, b);
+      check_equivalent(a, a_equivalent[0].second, a_equivalent[1].second, const_b);
    }
 
    SECTION("[uniform.scalar.assignment]") {
@@ -237,10 +237,21 @@ void check_scalar(const doge::shader_binary& program, const std::array<::uniform
          check_equivalent(-a, -static_cast<T>(a));
          check_equivalent(-b, -static_cast<T>(b));
       }
+      {
+         auto expected = static_cast<T>(a);
+         CHECK(++a == ++expected);
+         CHECK(a++ == expected++);
+         CHECK(a == expected); // make sure the result actually increased.
 
-      check_compound_assignment(a, a, program, first);
-      // check_compound_assignment(a, b, program, first);
-      // check_compound_assignment(a, n, program, first);
+         CHECK(--a == --expected);
+         CHECK(a-- == expected--);
+         CHECK(a == expected); // make sure the result actually decreased.
+      }
+
+      check_compound_assignment(a, doge::uniform{program, second.name, second.value}, program,
+         first);
+      check_compound_assignment(a, doge::uniform<const T>{program, second.name}, program, first);
+      check_compound_assignment(a, n, program, first);
 
       auto check_binary_arithmetic = [&](const auto& f) {
          check_binary_arithmetic_operation(f, a, n);
@@ -261,6 +272,15 @@ void check_scalar(const doge::shader_binary& program, const std::array<::uniform
    CHECK_THROWS(doge::uniform<GLfloat>{program, "float_dne", first.value});
 }
 
+template <typename T, typename U>
+// requires
+//    RingWith<T, U>
+void check_is_ring_with(const T& a, U& b) noexcept
+{
+   check_binary_arithmetic_operation(std::plus<>{}, a, b);
+   check_binary_arithmetic_operation(std::multiplies<>{}, a, b);
+}
+
 template <int N, typename T>
 void check_vector(const doge::shader_binary& program, const std::array<::uniform<T>, 2> vec)
 {
@@ -279,13 +299,13 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
             check_scalar(program, std::array<uniform<GLfloat>, 2>{{{"f.a", 0.05f}, {"f.b", 0.5f}}});
          }
 
-         // SECTION("[uniform.scalar.GLint]") {
-         //    check_scalar(program, std::array<uniform<GLint>, 2>{{{"i.a", 10}, {"i.b", 20}}});
-         // }
+         SECTION("[uniform.scalar.GLint]") {
+            check_scalar(program, std::array<uniform<GLint>, 2>{{{"i.a", -32767}, {"i.b", 65536}}});
+         }
 
-         // SECTION("Testing GLuint", "[uniform.scalar.GLuint]") {
-         //    check_scalar(program, std::array<uniform<GLuint>, 2>{{{"u.a", 15u}, {"u.b", 16u}}});
-         // }
+         SECTION("Testing GLuint", "[uniform.scalar.GLuint]") {
+            check_scalar(program, std::array<uniform<GLuint>, 2>{{{"u.a", 15u}, {"u.b", 16u}}});
+         }
       }
 
       SECTION("[uniform.vec2]") {
@@ -297,7 +317,7 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
 
          SECTION("[uniform.vec2.GLint") {
             check_vector<dimensions>(program, std::array<uniform<glm::ivec2>, 2>{{
-               {"iv2.a", {10, 20}}, {"iv2.b", {30, 40}}}});
+               {"iv2.a", {7, 20}}, {"iv2.b", {30, 40}}}});
          }
 
          SECTION("[uniform.vec2.GLuint") {

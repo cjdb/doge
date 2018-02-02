@@ -437,7 +437,7 @@ namespace doge {
          noexcept(noexcept(std::is_nothrow_constructible_v<T, T2> && std::is_nothrow_copy_assignable_v<T>))
       {
          value_ = gsl::narrow_cast<T>(std::forward<T2>(t));
-         ranges::invoke(set_uniform_, location_, value_);
+         set_uniform();
          return *this;
       }
 
@@ -452,73 +452,157 @@ namespace doge {
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T>
       //    RingWith<T, T2>
       uniform& operator+=(const uniform<T2>& u) noexcept
       {
-         value_ += u.value_;
-         return *this;
+         return *this += u.value_;
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T>
       //    RingWith<T, T2>
       uniform& operator+=(const T2& t2) noexcept
       {
          value_ += t2;
+         set_uniform();
          return *this;
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T>
       //    RingWith<T, T2>
       uniform& operator-=(const uniform<T2>& u) noexcept
       {
-         return *this -= u;
+         return *this -= u.value_;
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T>
       //    RingWith<T, T2>
       uniform& operator-=(const T2& t2) noexcept
       {
-         return *this -= t2;
-      }
-
-      template <typename T2>
-      // requires
-      //    RingWith<T, T2>
-      uniform& operator*=(const uniform<T2>& u) noexcept
-      {
-         value_ *= u.value_;
+         value_ -= t2;
+         set_uniform();
          return *this;
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T>
+      //    RingWith<T, T2>
+      uniform& operator*=(const uniform<T2>& u) noexcept
+      {
+         return *this *= u.value_;
+      }
+
+      template <typename T2>
+      requires
+         not std::is_const_v<T>
       //    RingWith<T, T2>
       uniform& operator*=(const T2& t2) noexcept
       {
          value_ *= t2;
+         set_uniform();
          return *this;
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T>
       //    RingWith<T, T2>
       uniform& operator/=(const uniform<T2>& u) noexcept
       {
-         value_ /= u.value_;
+         return *this /= u.value_;
+      }
+
+      template <typename T2>
+      requires
+         not std::is_const_v<T>
+      //    RingWith<T, T2>
+      uniform& operator/=(const T2& t2) noexcept
+      {
+         Expects(t2 != 0);
+         value_ /= t2;
+         set_uniform();
          return *this;
       }
 
       template <typename T2>
-      // requires
+      requires
+         not std::is_const_v<T> &&
+         ranges::Integral<T> &&
+         ranges::Integral<std::remove_const_t<T2>>
       //    RingWith<T, T2>
-      uniform& operator/=(const T2& t2) noexcept
+      uniform& operator%=(const uniform<T2>& u) noexcept
       {
-         value_ /= t2;
+         return *this %= u.value_;
+      }
+
+      template <typename T2>
+      requires
+         not std::is_const_v<T> &&
+         ranges::Integral<T> &&
+         ranges::Integral<std::remove_const_t<T2>>
+      //    RingWith<T, T2>
+      uniform& operator%=(const T2& t2) noexcept
+      {
+         Expects(t2 != 0);
+         value_ %= t2;
+         set_uniform();
          return *this;
+      }
+
+      uniform& operator++() noexcept
+      requires
+         not std::is_const_v<T> &&
+         requires(std::remove_const_t<T> t) {
+         {++t} -> T&;
+      }
+      {
+         ++value_;
+         set_uniform();
+         return *this;
+      }
+
+      T operator++(int) noexcept
+      requires
+         not std::is_const_v<T> &&
+         requires(std::remove_const_t<T> t) {
+         {t++} -> T;
+      }
+      {
+         auto result = value_;
+         ++*this;
+         return result;
+      }
+
+      uniform& operator--() noexcept
+      requires
+         not std::is_const_v<T> &&
+         requires(std::remove_const_t<T> t) {
+         {--t} -> T&;
+      }
+      {
+         --value_;
+         set_uniform();
+         return *this;
+      }
+
+      T operator--(int) noexcept
+      requires
+         not std::is_const_v<T> &&
+         requires(std::remove_const_t<T> t) {
+         {t--} -> T;
+      }
+      {
+         auto result = value_;
+         --*this;
+         return result;
       }
 
       explicit operator T() const noexcept(noexcept(std::is_nothrow_copy_assignable_v<T>))
@@ -878,6 +962,11 @@ namespace doge {
          const glm::tvec4<T>& v)
          : uniform{set_constructor_t{}, program, id, f1, v.x, v.y, v.z, v.w}
       {}
+
+      void set_uniform()
+      {
+         ranges::invoke(set_uniform_, location_, value_);
+      }
 
       // template <typename F, typename T>
       // uniform(const shader_program& program, const std::string_view id, const F& f,
