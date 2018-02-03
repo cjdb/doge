@@ -131,8 +131,10 @@ auto check_constructor(const doge::shader_binary& program, const ::uniform<T>& u
    auto c = doge::uniform<const T>{program, u.name};
    CHECK(static_cast<T>(a) == static_cast<T>(c));
 
-   CHECK_THROWS(doge::uniform<T>{program, "dne", u.value});
-   CHECK_THROWS(doge::uniform<const T>{program, "dne"});
+   CHECK_THROWS_AS((doge::uniform<T>{program, "dne", u.value}), doge::uniform_not_found);
+   CHECK_THROWS_AS((doge::uniform<const T>{program, "dne"}), doge::uniform_not_found);
+
+   CHECK_THROWS_AS((doge::uniform<T>{program, "bad_type", u.value}), std::runtime_error);
 
    return std::make_pair(std::move(a), std::move(c));
 }
@@ -224,11 +226,18 @@ void check_arithmetic(doge::uniform<T>& a, const doge::shader_binary& program,
 {
    a = first.value + first.value;
    const auto b = doge::uniform<const T>{program, first.name};
-   constexpr auto n = []{
-      if constexpr (doge::is_one_of_v<T, GLfloat, GLint, GLuint>)
+   const auto n = []{
+      if constexpr (doge::is_one_of_v<T, GLfloat, GLint, GLuint>) {
          return T{10};
+      }
       else if constexpr (doge::detail::is_vec2<T>) {
          return T{10, 10};
+      }
+      else if constexpr (doge::detail::is_vec3<T>) {
+         return T{10, 10, 10};
+      }
+      else if constexpr (doge::detail::is_vec4<T>) {
+         return T{10, 10, 10, 10};
       }
    }();
    {
@@ -331,7 +340,6 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
       }
 
       SECTION("[uniform.vec2]") {
-         constexpr ranges::Integral dimensions = 2;
          SECTION("[uniform.vec2.GLfloat]") {
             check_uniform(program, std::array<uniform<glm::vec2>, 3>{{{"v2.a", {0.05f, 0.08f}},
                {"v2.b", {0.5f, 0.8f}}, {"v2.c", {5.0f, 8.0f}}}});
@@ -342,13 +350,45 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
                {"iv2.b", {30, 40}}, {"iv2.c", {0, 0}}}});
          }
 
-         // SECTION("[uniform.vec2.GLuint") {
-         //    check_uniform(program, std::array<uniform<glm::uvec2>, 3>{{{"uv2.a", {10, 20}},
-         //       {"uv2.b", {30, 40}}, {"uv2.c", {0, 0}}}});
-         // }
+         SECTION("[uniform.vec2.GLuint") {
+            check_uniform(program, std::array<uniform<glm::uvec2>, 3>{{{"uv2.a", {10, 20}},
+               {"uv2.b", {30, 40}}, {"uv2.c", {0, 0}}}});
+         }
       }
-   // SECTION("Testing three-dimensional vectors", "[uniform.vec3]") {}
-   // SECTION("Testing four-dimensional vectors", "[uniform.vec4]") {}
+
+      SECTION("[uniform.vec3]") {
+         SECTION("[uniform.vec3.GLfloat]") {
+            check_uniform(program, std::array<uniform<glm::vec3>, 3>{{{"v3.a", {0.05f, 0.08f, 0.02f}},
+               {"v3.b", {0.5f, 0.8f, 0.2f}}, {"v3.c", {5.0f, 8.0f, 2.0f}}}});
+         }
+
+         SECTION("[uniform.vec3.GLint") {
+            check_uniform(program, std::array<uniform<glm::ivec3>, 3>{{{"iv3.a", {7, 20, 123}},
+               {"iv3.b", {30, 40, 5342}}, {"iv3.c", {0, 0, 0}}}});
+         }
+
+         SECTION("[uniform.vec3.GLuint") {
+            check_uniform(program, std::array<uniform<glm::uvec3>, 3>{{{"uv3.a", {10, 20, 123}},
+               {"uv3.b", {30, 40, 5342}}, {"uv3.c", {0, 0, 0}}}});
+         }
+      }
+
+      SECTION("[uniform.vec4]") {
+         SECTION("[uniform.vec4.GLfloat]") {
+            check_uniform(program, std::array<uniform<glm::vec4>, 3>{{{"v4.a", {0.05f, 0.08f, 0.02f, 0.06f}},
+               {"v4.b", {0.5f, 0.8f, 0.2f, 0.6f}}, {"v4.c", {5.0f, 8.0f, 2.0f, 6.0f}}}});
+         }
+
+         SECTION("[uniform.vec4.GLint") {
+            check_uniform(program, std::array<uniform<glm::ivec4>, 3>{{{"iv4.a", {7, 20, 123, 42}},
+               {"iv4.b", {30, 40, 5342, 135}}, {"iv4.c", {0, 0, 0, 0}}}});
+         }
+
+         SECTION("[uniform.vec4.GLuint") {
+            check_uniform(program, std::array<uniform<glm::uvec4>, 3>{{{"uv4.a", {10, 20, 123, 21}},
+               {"uv4.b", {30, 40, 5342, 32}}, {"uv4.c", {0, 0, 0, 0}}}});
+         }
+      }
    // SECTION("Testing 2xN matrix", "[uniform.mat2xN]") {}
    // SECTION("Testing Nx2 matrix", "[uniform.matNx2]") {}
    // SECTION("Testing 3xN matrix", "[uniform.mat3xN]") {}

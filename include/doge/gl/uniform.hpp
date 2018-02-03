@@ -244,7 +244,7 @@ namespace doge {
       uniform(const shader_binary& program, const std::string_view id, const glm::uvec4 v)
       requires
          ranges::Same<T, glm::uvec4>
-         : uniform{program, id, gl::Uniform4ui}
+         : uniform{program, id, gl::Uniform4ui, v}
       {}
 
       // uniform(const shader_binary& program, const std::string_view id, const T& rng)
@@ -930,8 +930,8 @@ namespace doge {
       {
          set_uniform();
          if (auto error = gl::GetError(); error != gl::NO_ERROR_)
-            throw std::runtime_error{"Error with '" + std::string{id} + "'" +
-              std::to_string(error)};
+            throw std::runtime_error{"Error " + std::to_string(error) + "with '" + std::string{id}
+               + "'"};
       }
 
       template <typename F1>
