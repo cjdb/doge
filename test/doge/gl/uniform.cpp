@@ -24,8 +24,6 @@
 #include <string_view>
 
 namespace ranges = std::experimental::ranges;
-using ranges::Regular;
-using ranges::StrictTotallyOrdered;
 
 namespace {
    template <typename T>
@@ -124,13 +122,13 @@ void check_compound_assignment(doge::uniform<T1>& a, const T2& b,
 template <typename T>
 auto check_constructor(const doge::shader_binary& program, const ::uniform<T>& u)
 {
-   StrictTotallyOrdered a = doge::uniform<T>{program, u.name, u.value};
-   StrictTotallyOrdered b = doge::uniform{program, u.name, u.value};
+   auto a = doge::uniform<T>{program, u.name, u.value};
+   auto b = doge::uniform{program, u.name, u.value};
 
    static_assert(std::is_same_v<decltype(a), decltype(b)>);
    CHECK(static_cast<T>(a) == static_cast<T>(b));
 
-   StrictTotallyOrdered c = doge::uniform<const T>{program, u.name};
+   auto c = doge::uniform<const T>{program, u.name};
    CHECK(static_cast<T>(a) == static_cast<T>(c));
 
    CHECK_THROWS(doge::uniform<T>{program, "dne", u.value});
@@ -226,7 +224,13 @@ void check_arithmetic(doge::uniform<T>& a, const doge::shader_binary& program,
 {
    a = first.value + first.value;
    const auto b = doge::uniform<const T>{program, first.name};
-   constexpr auto n = T(10);
+   constexpr auto n = []{
+      if constexpr (doge::is_one_of_v<T, GLfloat, GLint, GLuint>)
+         return T{10};
+      else if constexpr (doge::detail::is_vec2<T>) {
+         return T{10, 10};
+      }
+   }();
    {
       CHECK(+a == static_cast<T>(a));
       CHECK(+b == static_cast<T>(b));
@@ -258,7 +262,7 @@ void check_arithmetic(doge::uniform<T>& a, const doge::shader_binary& program,
    check_binary_arithmetic(std::minus<>{});
    check_binary_arithmetic(std::multiplies<>{});
 
-   if constexpr (not doge::detail::is_glm_matrix_v<T>) {
+   if constexpr (not doge::detail::is_glm_matrix<T>) {
       check_binary_arithmetic(std::divides<>{});
 
       if constexpr (std::is_integral_v<T>) {
@@ -268,25 +272,27 @@ void check_arithmetic(doge::uniform<T>& a, const doge::shader_binary& program,
 }
 
 template <typename T>
-void check_scalar(const doge::shader_binary& program, const std::array<uniform<T>, 3> u)
+void check_uniform(const doge::shader_binary& program, const std::array<uniform<T>, 3> u)
 {
    const auto [first, second, third] = u;
    auto [a, const_a] = check_constructor(program, first);
    auto [b, const_b] = check_constructor(program, second);
    auto [c, const_c] = check_constructor(program, third);
 
-   SECTION("[uniform.scalar.comparison]") {
+   SECTION("[uniform.comparison]") {
       auto a_equivalent = std::array{check_constructor(program, first),
          check_constructor(program, first)};
 
       check_equivalent(a, a_equivalent[0].first, a_equivalent[1].first, b);
       check_equivalent(a, a_equivalent[0].second, first.value, const_b);
 
-      check_strict_total_order(a, a_equivalent[0].first, a_equivalent[1].first, b, c);
-      check_strict_total_order(a, a_equivalent[0].second, first.value, const_b, third.value);
+      if constexpr (ranges::StrictTotallyOrdered<T>) {
+         check_strict_total_order(a, a_equivalent[0].first, a_equivalent[1].first, b, c);
+         check_strict_total_order(a, a_equivalent[0].second, first.value, const_b, third.value);
+      }
    }
 
-   SECTION("[uniform.scalar.assignment]") {
+   SECTION("[uniform.assignment]") {
       // test assignment
       a = second.value;
       check_is_same_on_device(a, program, first.name);
@@ -295,15 +301,9 @@ void check_scalar(const doge::shader_binary& program, const std::array<uniform<T
       CHECK(a == second.value);
    }
 
-   SECTION("[uniform.scalar.arithmetic]") {
+   SECTION("[uniform.arithmetic]") {
       check_arithmetic(a, program, first, second);
    }
-}
-
-template <int N, typename T>
-void check_vector(const doge::shader_binary& program, const std::array<::uniform<T>, 2> vec)
-{
-   (void)program, (void)vec;
 }
 
 TEST_CASE("uniforms can be read and written to", "[uniform]") {
@@ -315,17 +315,17 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
    program.use([&program]{
       SECTION("[uniform.scalar]") {
          SECTION("[uniform.scalar.GLfloat]") {
-            check_scalar(program, std::array<uniform<GLfloat>, 3>{{{"f.a", 0.05f}, {"f.b", 0.5f},
+            check_uniform(program, std::array<uniform<GLfloat>, 3>{{{"f.a", 0.05f}, {"f.b", 0.5f},
                {"f.c", 5.0f}}});
          }
 
          SECTION("[uniform.scalar.GLint]") {
-            check_scalar(program, std::array<uniform<GLint>, 3>{{{"i.a", -32'767}, {"i.b", 65'536},
+            check_uniform(program, std::array<uniform<GLint>, 3>{{{"i.a", -32'767}, {"i.b", 65'536},
                {"i.c", 650'356}}});
          }
 
          SECTION("Testing GLuint", "[uniform.scalar.GLuint]") {
-            check_scalar(program, std::array<uniform<GLuint>, 3>{{{"u.a", 15u}, {"u.b", 16u},
+            check_uniform(program, std::array<uniform<GLuint>, 3>{{{"u.a", 15u}, {"u.b", 16u},
                {"u.c", 352u}}});
          }
       }
@@ -333,19 +333,19 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
       SECTION("[uniform.vec2]") {
          constexpr ranges::Integral dimensions = 2;
          SECTION("[uniform.vec2.GLfloat]") {
-            check_vector<dimensions>(program, std::array<uniform<glm::vec2>, 2>{{
-               {"v2.a", {0.5f, 0.8f}}, {"v2.b", {-0.5f, -0.8f}}}});
+            check_uniform(program, std::array<uniform<glm::vec2>, 3>{{{"v2.a", {0.05f, 0.08f}},
+               {"v2.b", {0.5f, 0.8f}}, {"v2.c", {5.0f, 8.0f}}}});
          }
 
          SECTION("[uniform.vec2.GLint") {
-            check_vector<dimensions>(program, std::array<uniform<glm::ivec2>, 2>{{
-               {"iv2.a", {7, 20}}, {"iv2.b", {30, 40}}}});
+            check_uniform(program, std::array<uniform<glm::ivec2>, 3>{{{"iv2.a", {7, 20}},
+               {"iv2.b", {30, 40}}, {"iv2.c", {0, 0}}}});
          }
 
-         SECTION("[uniform.vec2.GLuint") {
-            check_vector<dimensions>(program, std::array<uniform<glm::uvec2>, 2>{{
-               {"uv2.a", {10, 20}}, {"uv2.b", {30, 40}}}});
-         }
+         // SECTION("[uniform.vec2.GLuint") {
+         //    check_uniform(program, std::array<uniform<glm::uvec2>, 3>{{{"uv2.a", {10, 20}},
+         //       {"uv2.b", {30, 40}}, {"uv2.c", {0, 0}}}});
+         // }
       }
    // SECTION("Testing three-dimensional vectors", "[uniform.vec3]") {}
    // SECTION("Testing four-dimensional vectors", "[uniform.vec4]") {}

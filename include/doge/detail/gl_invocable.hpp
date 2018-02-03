@@ -77,12 +77,12 @@ namespace doge::detail {
    // matrix types
    template <typename T>
    requires
-      is_glm_matrix_v<T>
+      is_glm_matrix<T>
    struct gl_traits<T> : type_t<GLfloat> {};
 
    template <typename T>
    requires
-      is_glm_matrix_v<T>
+      is_glm_matrix<T>
    struct gl_invocable<T> {
       using uniform_function_type = void(*)(GLint, GLsizei, GLboolean, const GLfloat*);
       using get_uniform_function_type = void(*)(GLuint, GLint, typename gl_traits<T>::type*);

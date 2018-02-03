@@ -43,8 +43,8 @@ namespace doge {
    namespace ranges = std::experimental::ranges;
 
    struct uniform_not_found : public std::runtime_error {
-      uniform_not_found(const std::string_view id)
-         : std::runtime_error{id.data()}
+      uniform_not_found(const std::string& id)
+         : std::runtime_error{"uniform not found: " + id}
       {}
    };
 
@@ -56,11 +56,12 @@ namespace doge {
       {
          if (ranges::SignedIntegral i = gl::GetUniformLocation(static_cast<GLuint>(program), id.data()); i >= 0)
             return i;
-         throw uniform_not_found{id};
+         throw uniform_not_found{id.data()};
       }
 
       template <class T>
       struct is_uniform : std::false_type{};
+
       template<ranges::DefaultConstructible T>
       struct is_uniform<uniform<T>> : std::true_type{};
    }
@@ -74,21 +75,21 @@ namespace doge {
       uniform(const shader_binary& program, const std::string_view id)
       requires
          std::is_const_v<T> &&
-         detail::is_glm_GLfloat_v<T>
+         detail::is_glm_GLfloat<T>
          : uniform{program, id, gl::GetUniformfv}
       {}
 
       uniform(const shader_binary& program, const std::string_view id)
       requires
          std::is_const_v<T> &&
-         detail::is_glm_GLint_v<T>
+         detail::is_glm_GLint<T>
          : uniform{program, id, gl::GetUniformiv}
       {}
 
       uniform(const shader_binary& program, const std::string_view id)
       requires
          std::is_const_v<T> &&
-         detail::is_glm_GLuint_v<T>
+         detail::is_glm_GLuint<T>
          : uniform{program, id, gl::GetUniformuiv}
       {}
 
@@ -526,7 +527,7 @@ namespace doge {
       //    RingWith<T, T2>
       uniform& operator/=(const T2& t2) noexcept
       {
-         Expects(t2 != 0);
+         Expects(t2 != T2{});
          value_ /= t2;
          set_uniform();
          return *this;
@@ -551,7 +552,7 @@ namespace doge {
       //    RingWith<T, T2>
       uniform& operator%=(const T2& t2) noexcept
       {
-         Expects(t2 != 0);
+         Expects(t2 != T2{});
          value_ %= t2;
          set_uniform();
          return *this;
@@ -692,7 +693,7 @@ namespace doge {
       friend std::enable_if_t<not is_uniform<T2>(), std::common_type_t<T, T2>>
       operator/(const T2& a, const uniform& b) noexcept
       {
-         Expects(b != T{0});
+         Expects(b != T{});
          return a / b.value_;
       }
 
@@ -702,7 +703,7 @@ namespace doge {
       friend std::enable_if_t<not is_uniform<T2>(), std::common_type_t<T, T2>>
       operator/(const uniform& a, const T2& b) noexcept
       {
-         Expects(b != T2{0});
+         Expects(b != T2{});
          return a.value_ / b;
       }
 
@@ -720,7 +721,7 @@ namespace doge {
       friend std::enable_if_t<not is_uniform<T2>(), std::common_type_t<T, T2>>
       operator%(const T2& a, const uniform& b) noexcept
       {
-         Expects(b != T{0});
+         Expects(b != T{});
          return a % b.value_;
       }
 
@@ -730,7 +731,7 @@ namespace doge {
       friend std::enable_if_t<not is_uniform<T2>(), std::common_type_t<T, T2>>
       operator%(const uniform& a, const T2& b) noexcept
       {
-         Expects(b != T2{0});
+         Expects(b != T2{});
          return a.value_ % b;
       }
 
@@ -742,9 +743,7 @@ namespace doge {
          return a % b.value_;
       }
 
-      template <typename T2>
-      requires
-         ranges::EqualityComparableWith<T, T2>
+      template <ranges::EqualityComparableWith<T> T2>
       friend bool operator==(const uniform& a, const uniform<T2>& b) noexcept
       {
          const auto result = a.value_ == b.value_;
@@ -752,144 +751,130 @@ namespace doge {
          return result;
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
+      template <ranges::EqualityComparableWith<T> T2>
       requires
-         ranges::EqualityComparableWith<T, T2> &&
          not is_uniform<T2>()
-      friend bool operator==(const uniform& a, const T2& b) noexcept
+      friend std::enable_if_t<not is_uniform<T2>(), bool>
+      operator==(const uniform& a, const T2& b) noexcept
       {
          return a.value_ == b;
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
+      template <ranges::EqualityComparableWith<T> T2>
       requires
-         ranges::EqualityComparableWith<T, T2> &&
          not is_uniform<T2>()
-      friend bool operator==(const T2& a, const uniform& b) noexcept
+      friend std::enable_if_t<not is_uniform<T2>(), bool>
+      operator==(const T2& a, const uniform& b) noexcept
       {
          return b == a;
       }
 
-      template <typename T2>
-      requires
-         ranges::EqualityComparableWith<T, T2>
+      template <ranges::EqualityComparableWith<T> T2>
       friend bool operator!=(const uniform& a, const uniform<T2>& b) noexcept
       {
          return not(a == b);
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
+      template <ranges::EqualityComparableWith<T> T2>
       requires
-         ranges::EqualityComparableWith<T, T2> &&
          not is_uniform<T2>()
-      friend bool operator!=(const uniform& a, const T2& b) noexcept
+      friend std::enable_if_t<not is_uniform<T2>(), bool>
+      operator!=(const uniform& a, const T2& b) noexcept
       {
          return not(a == b);
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
+      template <ranges::EqualityComparableWith<T> T2>
       requires
-         ranges::EqualityComparableWith<T, T2> &&
          not is_uniform<T2>()
-      friend bool operator!=(const T2& a, const uniform& b) noexcept
+      friend std::enable_if_t<not is_uniform<T2>(), bool>
+      operator!=(const T2& a, const uniform& b) noexcept
       {
          return not(a == b);
       }
 
-      template <typename T2>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator<(const uniform& a, const uniform<T2>& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2>, bool>
+      operator<(const uniform& a, const uniform<T2>& b) noexcept
       {
          const auto result = a.value_ < b.value_;
          assert(a.program_ != b.program_ || a.location_ != b.location_ || not result);
          return result;
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator<(const T2& a, const uniform& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator<(const T2& a, const uniform& b) noexcept
       {
          return a < b.value_;
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator<(const uniform& a, const T2& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator<(const uniform& a, const T2& b) noexcept
       {
          return a.value_ < b;
       }
 
-      template <typename T2>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator>(const uniform& a, const uniform<T2>& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2>, bool>
+      operator>(const uniform& a, const uniform<T2>& b) noexcept
       {
          return b < a;
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator>(const T2& a, const uniform& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator>(const T2& a, const uniform& b) noexcept
       {
          return b < a;
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator>(const uniform& a, const T2& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator>(const uniform& a, const T2& b) noexcept
       {
          return b < a;
       }
 
-      template <typename T2>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator<=(const uniform& a, const uniform<T2>& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2>, bool>
+      operator<=(const uniform& a, const uniform<T2>& b) noexcept
       {
          return not(a > b);
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator<=(const T2& a, const uniform& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator<=(const T2& a, const uniform& b) noexcept
       {
          return not(a > b);
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator<=(const uniform& a, const T2& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator<=(const uniform& a, const T2& b) noexcept
       {
          return not(a > b);
       }
 
-      template <typename T2>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator>=(const uniform& a, const uniform<T2>& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2>, bool>
+      operator>=(const uniform& a, const uniform<T2>& b) noexcept
       {
          return not(a < b);
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator>=(const uniform& a, const T2& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator>=(const uniform& a, const T2& b) noexcept
       {
          return not(a < b);
       }
 
-      template <typename T2, std::enable_if_t<not is_uniform<T2>()>* = nullptr>
-      requires
-         ranges::StrictTotallyOrderedWith<T, T2>
-      friend bool operator>=(const T2& a, const uniform& b) noexcept
+      template <ranges::StrictTotallyOrderedWith<T> T2>
+      friend std::enable_if_t<ranges::StrictTotallyOrderedWith<T, T2> && not is_uniform<T2>(), bool>
+      operator>=(const T2& a, const uniform& b) noexcept
       {
          return not(a < b);
       }
@@ -905,14 +890,23 @@ namespace doge {
            location_{::doge::detail::find_location(program, id)},
            value_{[&, this]{
             ranges::Regular result = std::remove_const_t<T>{};
-            ranges::invoke(f, program_, location_, std::addressof(result));
+            ranges::Regular data = [&result]() mutable {
+               using T2 = decltype(result);
+               if constexpr (detail::is_glm_vec<T2> || detail::is_glm_matrix<T2>) {
+                  return glm::value_ptr(result);
+               }
+               else {
+                  return std::addressof(result);
+               }
+            }();
+            ranges::invoke(f, program_, location_, data);
             return result; }()}
       {}
 
       uniform(const shader_binary& program, const std::string_view id,
          const detail::get_uniform_function_t<std::remove_cv_t<T>>& f)
       requires
-         detail::is_glm_matrix_v<T>
+         detail::is_glm_matrix<T>
       {
          ranges::invoke(f, static_cast<GLuint>(program), ::doge::detail::find_location(program, id),
             glm::value_ptr(value_));
@@ -928,15 +922,16 @@ namespace doge {
 
       template <typename F1, typename... Args>
       uniform(const set_constructor_t, const shader_binary& program, const std::string_view id,
-         const F1& f1, Args... args)
+         const F1& f1, Args&&... args)
          : set_uniform_{f1},
            program_{program},
            location_{::doge::detail::find_location(program, id)},
-           value_{T(args...)}
+           value_{std::forward<Args>(args)...}
       {
-         ranges::invoke(set_uniform_, location_, args...);
+         set_uniform();
          if (auto error = gl::GetError(); error != gl::NO_ERROR_)
-            throw std::runtime_error{std::to_string(error)};
+            throw std::runtime_error{"Error with '" + std::string{id} + "'" +
+              std::to_string(error)};
       }
 
       template <typename F1>
@@ -965,7 +960,18 @@ namespace doge {
 
       void set_uniform()
       {
-         ranges::invoke(set_uniform_, location_, value_);
+         if constexpr (is_one_of_v<T, GLfloat, GLint, GLuint>) {
+            ranges::invoke(set_uniform_, location_, value_);
+         }
+         else if constexpr (detail::is_vec2<T>) {
+            ranges::invoke(set_uniform_, location_, value_.x, value_.y);
+         }
+         else if constexpr (detail::is_vec3<T>) {
+            ranges::invoke(set_uniform_, location_, value_.x, value_.y, value_.z);
+         }
+         else if constexpr (detail::is_vec4<T>) {
+            ranges::invoke(set_uniform_, location_, value_.x, value_.y, value_.z, value_.w);
+         }
       }
 
       // template <typename F, typename T>
