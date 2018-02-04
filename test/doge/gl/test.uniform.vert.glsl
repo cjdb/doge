@@ -97,6 +97,78 @@ struct uvec4_t {
 
 uniform uvec4_t uv4;
 
+struct mat2x2_t {
+   mat2x2 a;
+   mat2x2 b;
+   mat2x2 c;
+};
+
+uniform mat2x2_t m2x2;
+
+struct mat2x3_t {
+   mat2x3 a;
+   mat2x3 b;
+   mat2x3 c;
+};
+
+uniform mat2x3_t m2x3;
+
+struct mat2x4_t {
+   mat2x4 a;
+   mat2x4 b;
+   mat2x4 c;
+};
+
+uniform mat2x4_t m2x4;
+
+struct mat3x2_t {
+   mat3x2 a;
+   mat3x2 b;
+   mat3x2 c;
+};
+
+uniform mat3x2_t m3x2;
+
+struct mat3x3_t {
+   mat3x3 a;
+   mat3x3 b;
+   mat3x3 c;
+};
+
+uniform mat3x3_t m3x3;
+
+struct mat3x4_t {
+   mat3x4 a;
+   mat3x4 b;
+   mat3x4 c;
+};
+
+uniform mat3x4_t m3x4;
+
+struct mat4x2_t {
+   mat4x2 a;
+   mat4x2 b;
+   mat4x2 c;
+};
+
+uniform mat4x2_t m4x2;
+
+struct mat4x3_t {
+   mat4x3 a;
+   mat4x3 b;
+   mat4x3 c;
+};
+
+uniform mat4x3_t m4x3;
+
+struct mat4x4_t {
+   mat4x4 a;
+   mat4x4 b;
+   mat4x4 c;
+};
+
+uniform mat4x4_t m4x4;
+
 void main()
 {
    gl_Position = vec4(v2.a, v2.b * v2.c)
@@ -107,5 +179,14 @@ void main()
                + vec4(uv3.a * uv3.b * uv3.c, u.a * u.b * u.c)
                + vec4(v4.a * v4.b * v4.c)
                + vec4(iv4.a * iv4.b * iv4.c)
-               + vec4(uv4.a * uv4.b * uv4.c);
+               + vec4(uv4.a * uv4.b * uv4.c)
+               + vec4(m2x2.a[0][0] * m2x2.b[0][0] * m2x2.c[0][0])
+               + vec4(m2x3.a[0][0] * m2x3.b[0][0] * m2x3.c[0][0])
+               + vec4(m2x4.a[0][0] * m2x4.b[0][0] * m2x4.c[0][0])
+               + vec4(m3x2.a[0][0] * m3x2.b[0][0] * m3x2.c[0][0])
+               + vec4(m3x3.a[0][0] * m3x3.b[0][0] * m3x3.c[0][0])
+               + vec4(m3x4.a[0][0] * m3x4.b[0][0] * m3x4.c[0][0])
+               + vec4(m4x2.a[0][0] * m4x2.b[0][0] * m4x2.c[0][0])
+               + vec4(m4x3.a[0][0] * m4x3.b[0][0] * m4x3.c[0][0])
+               + vec4(m4x4.a[0][0] * m4x4.b[0][0] * m4x4.c[0][0]);
 }
