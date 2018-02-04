@@ -14,13 +14,12 @@
 // limitations under the License.
 //
 #include "../static_objects.hpp"
-#include <doge/engine.hpp>
-#include <doge/gl/vertex_array.hpp>
-#include <doge/gl/shader_binary.hpp>
-#include <doge/gl/shader_source.hpp>
-#include <doge/gl/texture.hpp>
-#include <doge/gl/uniform.hpp>
-#include <doge/hid.hpp>
+#include "doge/engine.hpp"
+#include "doge/gl/vertex_array.hpp"
+#include "doge/gl/shader_binary.hpp"
+#include "doge/gl/shader_source.hpp"
+#include "doge/gl/texture.hpp"
+#include "doge/hid.hpp"
 #include <vector>
 
 namespace ranges = std::experimental::ranges;

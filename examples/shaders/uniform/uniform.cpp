@@ -41,13 +41,13 @@ int main()
       gl::ClearColor(0.2f, 0.3f, 0.4f, 1.0f);
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
-      program.use([out_colour, &vbo]{
-         vbo.bind([&out_colour, &vbo]{
-            using std::experimental::ranges::Regular;
-            Regular time = glfwGetTime();
-            Regular green = (std::sin(time) / 2.0f) + 0.5f;
-            doge::uniform(program, "out_colour", glm::vec4{0.0f, green, 0.0f, 1.0f});
+      program.use([&program, &vbo]{
+         using std::experimental::ranges::Regular;
+         Regular time = glfwGetTime();
+         Regular green = (std::sin(time) / 2.0f) + 0.5f;
+         doge::uniform(program, "out_colour", glm::vec4{0.0f, green, 0.0f, 1.0f});
 
+         vbo.bind([&vbo]{
             vbo.draw(doge::vertex::triangles, 0, 3);
          });
       });
