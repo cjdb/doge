@@ -42,10 +42,10 @@ int main()
    auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, textured_cubes, {0, 1, 3, 1, 2, 3}, 5,
       {3, 2}};
 
-   Regular view = glm::mat4{1.0f}
-                | doge::translate({0.0f, 0.0f, -3.0f});
-   Regular projection = glm::perspective(glm::radians(45.0f), engine.screen().aspect_ratio(), 0.1f,
-      100.0f);
+   doge::uniform(program, "projection", false, glm::perspective(glm::radians(45.0f),
+      engine.screen().aspect_ratio(), 0.1f, 100.0f));
+   doge::uniform(program, "view", false, glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -3.0f}));
+   auto model = doge::uniform(program, "model", false, glm::mat4{});
 
    gl::Enable(gl::DEPTH_TEST);
    engine.play([&]{
@@ -58,15 +58,11 @@ int main()
          for (auto i = decltype(tex.size()){}; i != tex.size(); ++i)
             tex[i].bind(gl::TEXTURE0 + i);
 
-         doge::uniform(program, "projection", false, projection);
-
          vbo.bind([&]{
             for (const Regular& i : cube_positions) {
-               doge::uniform(program, "model", false, 
-                 glm::mat4{1.0f}
-               | doge::translate(i)
-               | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f}));
-               doge::uniform(program, "view", false, view);
+               model = glm::mat4{1.0f}
+                     | doge::translate(i)
+                     | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f});
                vbo.draw(doge::vertex::triangles, 0, 36);
             }
          });

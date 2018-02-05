@@ -42,6 +42,9 @@ int main()
    auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, textured_cubes, 5, {3, 2}};
 
    auto camera = doge::camera{};
+   auto projection = doge::uniform(program, "projection", false, glm::mat4{});
+   auto view = doge::uniform(program, "view", false, glm::mat4{});
+   auto model = doge::uniform(program, "model", false, glm::mat4{});
 
    gl::Enable(gl::DEPTH_TEST);
    doge::hid::mouse::sensitivity(0.4f);
@@ -91,16 +94,14 @@ int main()
             tex[i].bind(gl::TEXTURE0 + i);
          }
 
-         doge::uniform(program, "projection", false,
-            camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f));
-         doge::uniform(program, "view", false, camera.view());
+         projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
+         view = camera.view();
 
          vbo.bind([&]{
             for (const Regular& i : cube_positions) {
-               doge::uniform(program, "model", false, 
-                 glm::mat4{1.0f}
-               | doge::translate(i)
-               | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f}));
+               model = glm::mat4{1.0f}
+                     | doge::translate(i)
+                     | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f});
                vbo.draw(doge::vertex::triangles, 0, 36);
             }
          });

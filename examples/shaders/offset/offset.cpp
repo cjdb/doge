@@ -36,9 +36,7 @@ int main()
       std::make_pair(doge::shader_source::fragment, "offset.frag.glsl")}};
    auto v = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, coloured_triangle, 6, {3, 3}};
 
-   program.use([&]{
-      doge::uniform(program, "offset", 0.5f);
-   });
+   doge::uniform(program, "offset", 0.5f);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
