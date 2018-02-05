@@ -7,7 +7,7 @@
 # Extensions relevant to doge made by Christopher Di Bella
 
 dist: xenial
-sudo: false
+sudo: required
 language: cpp
 
 cache:
@@ -21,10 +21,10 @@ matrix:
       os: linux
       addons: &gcc7
         apt:
-          packages:
-            - g++-7
           sources:
             - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
 
     - env: GCC_VERSION=7 BUILD_TYPE=Release
       os: linux
