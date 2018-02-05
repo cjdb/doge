@@ -23,7 +23,6 @@ matrix:
         apt:
           packages:
             - g++-7
-            - ninja-build
           source:
             - ubuntu-toolchain-r-test
 
@@ -61,8 +60,8 @@ install:
     if [[ -z "$(ls -A ${DEPS_DIR}/cmcstl2)" ]]; then
       git clone https://github.com/CaseyCarter/cmcstl2.git
       cd cmcstl2
-      cmake -GNinja -DCMAKE_INSTALL_PREFIX=${LIBS_DIR} .
-      ninja && ninja install
+      cmake -DCMAKE_INSTALL_PREFIX=${LIBS_DIR} .
+      make && make install
     fi
   ############################################################################
   # Install GLFW
@@ -88,11 +87,4 @@ install:
     fi
 
 script:
-  - git clone https://github.com/CaseyCarter/cmcstl2.git
-  - cd cmcstl2
-  - cmake -DCMAKE_CXX_COMPILER=`which g++-7` .
-  - cmake --build . -- -j2
-  - sudo cmake --install
-  - cmake -DCMAKE_C_COMPILER=`which gcc-7` -DCMAKE_CXX_COMPILER=`which g++-7`
-  - cmake --build . -- -j2
   - ctest
