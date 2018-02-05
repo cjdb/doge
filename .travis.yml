@@ -7,7 +7,7 @@
 # Extensions relevant to doge made by Christopher Di Bella
 
 dist: xenial
-sudo: required
+sudo: false
 language: cpp
 
 cache:
