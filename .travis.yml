@@ -6,7 +6,7 @@
 # Original source: https://github.com/CaseyCarter/cmcstl2/.travis.yml
 # Extensions relevant to doge made by Christopher Di Bella
 
-dist: trusty
+dist: xenial
 sudo: false
 language: cpp
 
