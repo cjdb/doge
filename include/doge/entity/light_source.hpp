@@ -25,40 +25,40 @@ namespace doge {
 
    class basic_light_source {
    public:
-      basic_light_source(const uniform projection, const uniform view, const uniform model)
-         : projection_{projection},
-           view_{view},
-           model_{model}
+      basic_light_source(uniform projection, uniform view, uniform model)
+         : projection_{std::move(projection)},
+           view_{std::move(view)},
+           model_{std::move(model)}
       {}
 
       void draw(const glm::mat4& p, const glm::mat4& v, const glm::mat4& m)
       {
-         ::doge::uniform(projection(), false, p);
-         ::doge::uniform(view(), false, v);
-         ::doge::uniform(model(), false, m);
+         projection_ = p;
+         view_ = v;
+         model_ m;
          draw_impl();
       }
    protected:
       ~basic_light_source() = default;
 
-      uniform projection() const noexcept
+      const uniform& projection() const noexcept
       {
          return projection_;
       }
 
-      uniform view() const noexcept
+      const uniform& view() const noexcept
       {
          return view_;
       }
 
-      uniform model() const noexcept
+      const uniform& model() const noexcept
       {
          return model_;
       }
    private:
-      uniform projection_;
-      uniform view_;
-      uniform model_;
+      uniform<glm::mat4> projection_;
+      uniform<glm::mat4> view_;
+      uniform<glm::mat4> model_;
 
       virtual void draw_impl() = 0;
    };
