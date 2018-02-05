@@ -1,0 +1,20 @@
+dist: trusty
+sudo: true
+language: cpp
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-7
+
+script:
+  - git clone https://github.com/CaseyCarter/cmcstl2.git
+  - cd cmcstl2
+  - cmake -DCMAKE_CXX_COMPILER=`which g++-7` .
+  - cmake --build . -- -j2
+  - sudo cmake --install
+  - cmake -DCMAKE_C_COMPILER=`which gcc-7` -DCMAKE_CXX_COMPILER=`which g++-7`
+  - cmake --build . -- -j2
+  - ctest
