@@ -16,56 +16,75 @@
 #ifndef DOGE_ENTITY_LIGHT_SOURCE_HPP
 #define DOGE_ENTITY_LIGHT_SOURCE_HPP
 
-#include <glm/mat4x4.hpp>
+#include "doge/types.hpp"
+#include <gsl/gsl>
+#include <variant>
 
 namespace doge {
    namespace ranges = std::experimental::ranges;
 
-   using uniform = GLint;
-
    class basic_light_source {
    public:
-      basic_light_source(uniform projection, uniform view, uniform model)
-         : projection_{std::move(projection)},
-           view_{std::move(view)},
-           model_{std::move(model)}
-      {}
-
-      void draw(const glm::mat4& p, const glm::mat4& v, const glm::mat4& m)
-      {
-         projection_ = p;
-         view_ = v;
-         model_ m;
-         draw_impl();
-      }
    protected:
       ~basic_light_source() = default;
-
-      const uniform& projection() const noexcept
-      {
-         return projection_;
-      }
-
-      const uniform& view() const noexcept
-      {
-         return view_;
-      }
-
-      const uniform& model() const noexcept
-      {
-         return model_;
-      }
-   private:
-      uniform<glm::mat4> projection_;
-      uniform<glm::mat4> view_;
-      uniform<glm::mat4> model_;
-
-      virtual void draw_impl() = 0;
    };
 
-   class directional_light {};
-   class point_light {};
-   class spotlight {};
+   class directional_light final : public basic_light_source {
+   public:
+      directional_light(uniform<glm::vec3> direction)
+         : direction_{std::move(direction)}
+      {}
+
+      directional_light& operator=(directional_light const& light) noexcept
+      {
+         direction_ = light.direction_;
+         return *this;
+      }
+
+      directional_light& operator=(vec3 const& direction) noexcept
+      {
+         direction_ = direction;
+         return *this;
+      }
+
+      directional_light& operator+=(vec3 const& v) noexcept
+      {
+         direction_ += v;
+         return *this;
+      }
+
+      directional_light& operator-=(vec3 const& v) noexcept
+      {
+         direction_ -= v;
+         return *this;
+      }
+
+      directional_light& operator*=(float const scalar) noexcept
+      {
+         direction_ *= scalar;
+         return *this;
+      }
+
+      directional_light& operator/=(float const scalar) noexcept
+      {
+         Expects(scalar != 0);
+         direction_ /= scalar;
+         return *this;
+      }
+   private:
+      uniform<glm::vec3> direction_;
+   };
+
+   inline void draw(directional_light const&) noexcept {}
+
+   class point_light final : public basic_light_source {};
+   void draw(const point_light&);
+
+   class spotlight final : public basic_light_source {};
+   void draw(const spotlight&);
+
+   using light_source = std::variant<directional_light, point_light, spotlight>;
+   void draw(const light_source&);
 } // namespace doge
 
 #endif // DOGE_ENTITY_LIGHT_SOURCE_HPP

@@ -26,9 +26,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 
-#include <iostream>
-#include <experimental/ranges/algorithm>
-
 int main()
 {
    namespace ranges = std::experimental::ranges;
