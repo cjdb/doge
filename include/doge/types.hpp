@@ -52,6 +52,9 @@ namespace doge {
    using mat2 = mat2x2;
    using mat3 = mat3x3;
    using mat4 = mat4x4;
+
+   template <class T>
+   constexpr auto unit = T{1.0f};
 } // namespace doge
 
 #endif // DOGE_TYPES_HPP

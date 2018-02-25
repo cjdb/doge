@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef DOGE_GL_GL_ERROR_HPP
+#define DOGE_GL_GL_ERROR_HPP
 #include <gl/gl_core.hpp>
 #include <iostream>
 #include <stdexcept>
@@ -93,3 +95,5 @@ namespace doge {
       }
    }
 } // namespace doge
+
+#endif // DOGE_GL_GL_ERROR_HPP

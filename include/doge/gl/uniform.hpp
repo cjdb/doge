@@ -652,9 +652,14 @@ namespace doge {
          return result;
       }
 
-      explicit operator T() const noexcept(noexcept(std::is_nothrow_copy_assignable_v<T>))
+      T const& get() const noexcept
       {
          return data_.value_;
+      }
+
+      explicit operator T() const noexcept(noexcept(std::is_nothrow_copy_assignable_v<T>))
+      {
+         return get();
       }
 
       template <typename T2, std::enable_if_t<not is_uniform<T2>>* = nullptr>
@@ -953,6 +958,7 @@ namespace doge {
          : data_{f, static_cast<GLuint>(program), ::doge::detail::find_location(program, id),
               count, transpose, matrix}
       {
+         gl::UseProgram(data_.program_);
          set_uniform(id);
       }
 
@@ -1003,10 +1009,6 @@ namespace doge {
 
          check_error(std::string{id});
       }
-
-      // template <typename F, typename T>
-      // uniform(const shader_program& program, const std::string_view id, const F& f,
-      //    const glm::detail::tmat)
    };
 
    template <ranges::DefaultConstructible T>

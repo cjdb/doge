@@ -52,6 +52,8 @@ namespace doge {
       std::vector<shader_source>
       compile_shaders(const std::vector<std::pair<shader_source::type, std::string>>& paths);
    };
+
+   shader_binary make_shader(std::string const& basic_shader_path);
 } // namespace doge
 
 #endif // DOGE_GL_SHADER_BINARY_HPP
