@@ -38,6 +38,6 @@ encounter.
 
 ## Submitting patches
 
-Patches can be submitted my making pull requests from your local fork. All patches are subject to
+Patches can be submitted by making pull requests from your local fork. All patches are subject to
 review. Please make sure that your pull request attempts to merge from a branch other than master.
 Patches that attempt to merge from master will be closed.
