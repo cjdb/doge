@@ -17,6 +17,7 @@
 #define DOGE_ENGINE_HPP
 
 #include <doge/hid.hpp>
+#include <doge/types.hpp>
 #include <doge/utility/screen_data.hpp>
 #include <experimental/ranges/concepts>
 #include <experimental/ranges/functional>
@@ -26,19 +27,23 @@
 namespace doge {
    namespace ranges = std::experimental::ranges;
 
+   enum class depth_test { disabled, enabled };
+
    class engine {
    public:
-      engine()
+      engine(depth_test const enable_depth_test = depth_test::disabled)
+         : clear_flags_{set_clear_flags(static_cast<bool>(enable_depth_test))}
       {
-         doge::hid::keyboard::init(screen_.window());
-         doge::hid::mouse::init(screen_.window());
+         doge::hid::keyboard::init(screen_.window()); // TODO get this into a constructor >:(
+         doge::hid::mouse::init(screen_.window()); // TODO get this into a constructor >:(
       }
 
       template <ranges::Invocable F>
-      void play(const F& logic)
+      void play(F const& logic)
       {
          while (screen_.open()) {
             compute_frame_displacement();
+            clear_screen();
             ranges::invoke(logic);
             hid::mouse::update();
             screen_.swap_buffers();
@@ -56,19 +61,49 @@ namespace doge {
          screen_.close();
       }
 
+      void clear_colour(vec4 const& colour) noexcept
+      {
+         clear_colour_ = colour;
+         gl::ClearColor(clear_colour_.r, clear_colour_.g, clear_colour_.b, clear_colour_.a);
+      }
+
+      void clear_colour(float const r, float const g, float const b, float const a = 1.0f) noexcept
+      {
+         clear_colour({r, g, b, a});
+      }
+
+      void clear_screen() const noexcept
+      {
+         gl::Clear(clear_flags_);
+      }
+
       [[nodiscard]] static ranges::Regular frame_displacement() noexcept
       {
          return frame_displacement_;
       }
    private:
       screen_data screen_;
+      vec4 clear_colour_ = {1.0f, 1.0f, 1.0f, 1.0f};
+      GLenum clear_flags_;
+
       static inline float previous_frame_ = glfwGetTime();
       static inline float frame_displacement_ = 0.0f;
 
+      static GLenum set_clear_flags(bool const depth_buffer) noexcept
+      {
+         auto flags = GLenum{gl::COLOR_BUFFER_BIT};
+         if (depth_buffer) {
+            gl::Enable(gl::DEPTH_TEST);
+            flags |= gl::DEPTH_BUFFER_BIT;
+         }
+
+         return flags;
+      }
+
       static void compute_frame_displacement() noexcept
       {
-         const ranges::Regular current_frame = glfwGetTime();
-         const ranges::Regular displacement = current_frame - previous_frame_;
+         ranges::Regular const current_frame = glfwGetTime();
+         ranges::Regular const displacement = current_frame - previous_frame_;
          previous_frame_ = current_frame;
          frame_displacement_ = displacement;
       }

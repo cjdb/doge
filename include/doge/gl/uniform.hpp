@@ -651,9 +651,14 @@ namespace doge {
          return result;
       }
 
-      explicit operator T() const noexcept(noexcept(std::is_nothrow_copy_assignable_v<T>))
+      T const& get() const noexcept
       {
          return data_.value_;
+      }
+
+      explicit operator T() const noexcept(noexcept(std::is_nothrow_copy_assignable_v<T>))
+      {
+         return get();
       }
 
       template <typename T2, std::enable_if_t<not is_uniform<T2>>* = nullptr>
@@ -955,10 +960,15 @@ namespace doge {
          : data_{f, static_cast<GLuint>(program), ::doge::detail::find_location(program, id),
               count, transpose, matrix}
       {
+<<<<<<< HEAD
          set_uniform();
          if (auto error = gl::GetError(); error != gl::NO_ERROR_)
             throw std::runtime_error{"Error " + std::to_string(error) + "with '" + std::string{id}
                + "'"};
+=======
+         gl::UseProgram(data_.program_);
+         set_uniform(id);
+>>>>>>> 7587ad2... Added utility functions and an error type. Corrected uniform's constructor so that it does not throw when constructed as a part of a composite type.
       }
 
       template <typename F1>
@@ -1006,10 +1016,6 @@ namespace doge {
                glm::value_ptr(data_.value_));
          }
       }
-
-      // template <typename F, typename T>
-      // uniform(const shader_program& program, const std::string_view id, const F& f,
-      //    const glm::detail::tmat)
    };
 
    template <ranges::DefaultConstructible T>
