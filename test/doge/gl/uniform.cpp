@@ -610,3 +610,4 @@ TEST_CASE("uniforms can be read and written to", "[uniform]") {
       }
    });
 }
+

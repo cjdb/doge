@@ -4,3 +4,4 @@ target_link_libraries(test.doge.gl.uniform test.main)
 add_test(test.uniform test.doge.gl.uniform)
 
 copy_shaders()
+
