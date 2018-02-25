@@ -209,6 +209,13 @@ namespace doge {
    }
 
    template <texture_t Kind>
+   basic_texture<Kind> make_texture_map(std::string const& texture_path)
+   {
+      return {texture_path, {doge::texture_wrap_t::repeat, doge::texture_wrap_t::repeat},
+         doge::minmag_t::linear, doge::minmag_t::linear};
+   }
+
+   template <texture_t Kind>
    class basic_texture {
       using wrapping_t =
          std::conditional_t<Kind == texture_t::texture_1d, std::tuple<texture_wrap_t>,
