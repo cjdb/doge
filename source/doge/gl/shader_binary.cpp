@@ -29,4 +29,12 @@ namespace doge {
          shaders.emplace_back(i.first, i.second);
       return shaders;
    }
+
+   shader_binary make_shader(std::string const& basic_shader_path)
+   {
+      return shader_binary{{
+         std::make_pair(shader_source::vertex, basic_shader_path + ".vert.glsl"),
+         std::make_pair(shader_source::fragment, basic_shader_path + ".frag.glsl")
+      }};
+   }
 } // namespace doge
