@@ -32,7 +32,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 ## Debug flags
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-inline -fstack-protector-all -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
 
 ## Release flags
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g0 -DNDEBUG")
@@ -94,7 +94,7 @@ function(copy_shaders)
 endfunction(copy_shaders)
 
 function(link_core object)
-   target_link_libraries(${object} doge gl_core)
+   target_link_libraries(${object} doge gl_core imgui)
    if (WIN32)
       target_link_libraries(${object} libglfw3.a opengl32)
    else()
@@ -103,6 +103,6 @@ function(link_core object)
 endfunction(link_core)
 
 add_subdirectory(examples)
-add_subdirectory(test)
+#add_subdirectory(test)
 
 install(DIRECTORY $(PROJECT_SOURCE_DIR)/include DESTINATION include)
