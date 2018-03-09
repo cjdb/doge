@@ -27,13 +27,16 @@ namespace doge {
    template <typename Light>
    class basic_light_source {
    public:
-      basic_light_source(shader_binary const& program, std::pair<std::string, vec3> const& position,
-         std::pair<std::string, vec3> const& ambient, std::pair<std::string, vec3> const& diffuse,
-         std::pair<std::string, vec3> const& specular)
+      basic_light_source(shader_binary const& program,
+         std::pair<std::string_view, vec3> const& position,
+         std::pair<std::string_view, vec3> const& ambient,
+         std::pair<std::string_view, vec3> const& diffuse,
+         std::pair<std::string_view, vec3> const& specular,
+         vec3 const& colour = unit<vec3>)
          : position_{program, position.first, position.second},
-           ambient_{program, ambient.first, ambient.second},
-           diffuse_{program, diffuse.first, diffuse.second},
-           specular_{program, specular.first, specular.second}
+           ambient_{program, ambient.first, colour * ambient.second},
+           diffuse_{program, diffuse.first, colour * diffuse.second},
+           specular_{program, specular.first, colour * specular.second}
       {}
 
       Light& operator+=(vec3 const& delta) noexcept
@@ -157,41 +160,41 @@ namespace doge {
 
    inline void draw(directional_light const&) noexcept {}
 
-   // class point_light final : public basic_light_source<point_light> {
-   // public:
-   //    explicit point_light(shader_binary const& program,
-   //       std::pair<std::string_view, vec3> const& position,
-   //       std::pair<std::string_view, vec3> const& ambient,
-   //       std::pair<std::string_view, vec3> const& diffuse,
-   //       std::pair<std::string_view, vec3> const& specular,
-   //       std::pair<std::string_view, GLfloat> const constant,
-   //       std::pair<std::string_view, GLfloat> const linear,
-   //       std::pair<std::string_view, GLfloat> const quadratic)
-   //       : basic_light_source<point_light>{program, position, ambient, diffuse, specular},
-   //         constant_{program, constant.first, constant.second},
-   //         linear_{program, linear.first, linear.second},
-   //         quadratic_{program, quadratic.first, quadratic.second}
-   //    {}
+   class point_light final : public basic_light_source<point_light> {
+   public:
+      explicit point_light(shader_binary const& program,
+         std::pair<std::string, vec3> const& position,
+         std::pair<std::string, vec3> const& ambient,
+         std::pair<std::string, vec3> const& diffuse,
+         std::pair<std::string, vec3> const& specular,
+         std::pair<std::string, GLfloat> const constant,
+         std::pair<std::string, GLfloat> const linear,
+         std::pair<std::string, GLfloat> const quadratic)
+         : basic_light_source<point_light>{program, position, ambient, diffuse, specular},
+           constant_{program, constant.first, constant.second},
+           linear_{program, linear.first, linear.second},
+           quadratic_{program, quadratic.first, quadratic.second}
+      {}
 
-   //    decltype(auto) operator=(point_light const& light) noexcept
-   //    {
-   //       assign(light);
-   //       constant_ = light.constant_;
-   //       linear_ = light.linear_;
-   //       quadratic_ = light.quadratic_;
-   //       return *this;
-   //    }
+      decltype(auto) operator=(point_light const& light) noexcept
+      {
+         assign(light);
+         constant_ = light.constant_;
+         linear_ = light.linear_;
+         quadratic_ = light.quadratic_;
+         return *this;
+      }
 
-   //    decltype(auto) operator=(vec3 const& position) noexcept
-   //    {
-   //       assign(position);
-   //       return *this;
-   //    }
-   // private:
-   //    uniform<GLfloat> constant_;
-   //    uniform<GLfloat> linear_;
-   //    uniform<GLfloat> quadratic_;
-   // };
+      decltype(auto) operator=(vec3 const& position) noexcept
+      {
+         assign(position);
+         return *this;
+      }
+   private:
+      uniform<GLfloat> constant_;
+      uniform<GLfloat> linear_;
+      uniform<GLfloat> quadratic_;
+   };
    // void draw(const point_light&);
 
    // class spotlight final : public basic_light_source<spotlight> {};

@@ -15,15 +15,19 @@ struct material_properties {
 
 uniform material_properties material;
 
+struct attenuation_t {
+   float constant;
+   float linear;
+   float quadratic;
+};
+
 struct light_properties {
-   vec3 ambient;
+   vec3 ambience;
    vec3 diffuse;
    vec3 specular;
    vec3 position;
 
-   float attenuation_constant;
-   float attenuation_linear;
-   float attenuation_quadratic;
+   attenuation_t attenuation;
 };
 
 uniform light_properties light;
@@ -50,8 +54,8 @@ void main()
 
    // attenuation
    const float distance = length(light.position - frag_position);
-   const float attenuation = 1.0 / (light.attenuation_constant + light.attenuation_linear * distance
-      + light.attenuation_quadratic * (distance * distance));
+   const float attenuation = 1.0 / (light.attenuation.constant + light.attenuation.linear * distance
+      + light.attenuation.quadratic * (distance * distance));
 
    frag_colour = vec4((ambient + diffuse + specular) * attenuation, 1.0);
 }

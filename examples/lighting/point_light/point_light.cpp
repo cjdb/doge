@@ -18,18 +18,39 @@
 #include "doge/doge.hpp"
 #include <string>
 
+class lamp {
+public:
+   template <ranges::Invocable F>
+   void draw(F const& f)
+   {
+      program_.use([this, &f]{
+         ranges::invoke(f);
+         vertices_.bind([this]{
+            vertices_.draw(doge::vertex::triangles, 0, 36);
+         });
+      });
+   }
+private:
+   doge::shader_binary program_ = doge::make_shader("light_source");
+   doge::vertex vertices_{gl::ARRAY_BUFFER, gl::STATIC_DRAW, cube_with_normal, 8, {3}};
+};
+
 int main()
 {
    auto engine = doge::engine{doge::depth_test::enabled};
-   auto cube = demo::cube{cube_with_normal, "example.directional_light", "resources/container"};
+   auto cube = demo::cube{cube_with_normal, "example.point_light", "resources/container"};
    auto camera = doge::camera{};
 
-   auto light = doge::directional_light{cube.program(),
-      {"light.direction", -doge::vec3{0.2f, 1.0f, 0.3f}},
+   auto light = doge::point_light{cube.program(),
+      {"light.position", doge::vec3{}},
       {"light.ambient", doge::unit<doge::vec3> * 0.2f},
       {"light.diffuse", doge::unit<doge::vec3> * 0.5f},
-      {"light.specular", doge::unit<doge::vec3> * 0.5f}
+      {"light.specular", doge::unit<doge::vec3> * 0.5f},
+      {"light.attenuation.constant", 1.0f},
+      {"light.attenuation.linear", 0.09f},
+      {"light.attenuation.quadratic", 0.032f}
    };
+   auto l = lamp{};
 
    engine.clear_colour(0.1f, 0.1f, 0.1f);
    engine.play([&]{
@@ -62,5 +83,6 @@ int main()
          doge::uniform(cube.program(), "projection", false,
             camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f));
       });
+      l.draw([]{});
    });
 }
