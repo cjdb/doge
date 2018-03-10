@@ -5,7 +5,7 @@ in vec3 frag_position;
 in vec3 frag_normal;
 in vec2 frag_texture_coordinates;
 
-uniform vec3 view_position;
+uniform vec3 viewer_position;
 
 struct material_properties {
    sampler2D diffuse;
@@ -34,22 +34,20 @@ uniform light_properties light;
 
 void main()
 {
-   const vec3 diffuse_factor = vec3(texture(material.diffuse, frag_texture_coordinates));
-
    // ambient
-   const vec3 ambient = light.ambience * diffuse_factor;
+   const vec3 ambient = light.ambience * texture(material.diffuse, frag_texture_coordinates).rgb;
 
    // diffuse
    const vec3 norm = normalize(frag_normal);
-   const vec3 light_dir = normalize(-light.position);
+   const vec3 light_dir = normalize(light.position - frag_position);
    const float diff = max(dot(norm, light_dir), 0.0);
-   const vec3 diffuse = light.diffuse * diff * diffuse_factor;
+   const vec3 diffuse = light.diffuse * diff * texture(material.diffuse, frag_texture_coordinates).rgb;
 
    // specular
-   const vec3 view_dir = normalize(view_position - frag_position);
+   const vec3 view_dir = normalize(viewer_position - frag_position);
    const vec3 reflect_dir = reflect(-light_dir, norm);
    const float spec = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
-   const vec3 specular = light.specular * spec * vec3(texture(material.specular, frag_texture_coordinates));
+   const vec3 specular = light.specular * spec * texture(material.specular, frag_texture_coordinates).rgb;
 
 
    // attenuation

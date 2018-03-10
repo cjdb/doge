@@ -20,11 +20,12 @@
 
 class lamp {
 public:
-   template <ranges::Invocable F>
+   template <ranges::Invocable<doge::uniform<doge::mat4>&, doge::uniform<doge::mat4>&,
+      doge::uniform<doge::mat4>&> F>
    void draw(F const& f)
    {
       program_.use([this, &f]{
-         ranges::invoke(f);
+         ranges::invoke(f, projection_, view_, model_);
          vertices_.bind([this]{
             vertices_.draw(doge::vertex::triangles, 0, 36);
          });
@@ -33,6 +34,9 @@ public:
 private:
    doge::shader_binary program_ = doge::make_shader("light_source");
    doge::vertex vertices_{gl::ARRAY_BUFFER, gl::STATIC_DRAW, cube_with_normal, 8, {3}};
+   doge::uniform<doge::mat4> projection_{program_, "projection", false, {}};
+   doge::uniform<doge::mat4> view_{program_, "view", false, {}};
+   doge::uniform<doge::mat4> model_{program_, "model", false, {}};
 };
 
 int main()
@@ -42,10 +46,10 @@ int main()
    auto camera = doge::camera{};
 
    auto light = doge::point_light{cube.program(),
-      {"light.position", doge::vec3{}},
-      {"light.ambient", doge::unit<doge::vec3> * 0.2f},
+      {"light.position", doge::vec3{1.2f, 1.0f, 2.0f}},
+      {"light.ambience", doge::unit<doge::vec3> * 0.2f},
       {"light.diffuse", doge::unit<doge::vec3> * 0.5f},
-      {"light.specular", doge::unit<doge::vec3> * 0.5f},
+      {"light.specular", doge::unit<doge::vec3>},
       {"light.attenuation.constant", 1.0f},
       {"light.attenuation.linear", 0.09f},
       {"light.attenuation.quadratic", 0.032f}
@@ -67,22 +71,40 @@ int main()
       hid::on_key_down<hid::keyboard>('D', [&camera]{
          camera.move(doge::cardinality::east, doge::camera::free); });
 
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_UP, [&light]{
-         light = -doge::vec3{0.2f, 1.0f, 0.3f}; });
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_DOWN, [&light]{
-         light = doge::vec3{0.2f, 1.0f, 0.3f}; });
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_LEFT, [&light]{
-         light = -doge::vec3{1.0f, 0.3f, 0.2f}; });
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_RIGHT, [&light]{
-         light = doge::vec3{0.3f, 0.2f, 1.0f}; });
-
-      cube.draw([&camera, &cube, &engine](auto& view, auto& position, auto& model) {
-         view = camera.view();
-         position = camera.position();
-         model = doge::mat4{1.0f};
-         doge::uniform(cube.program(), "projection", false,
-            camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f));
+      cube.program().use([&]{
+         hid::on_key_down<hid::keyboard>('U', [&light]{
+            light += doge::vec3{0.0f, 0.01f, 0.0f}; });
+         hid::on_key_down<hid::keyboard>('I', [&light]{
+            light += doge::vec3{0.0f, 0.0f, 0.01f}; });
+         hid::on_key_down<hid::keyboard>('O', [&light]{
+            light -= doge::vec3{0.0f, 0.01f, 0.0f}; });
+         hid::on_key_down<hid::keyboard>('J', [&light]{
+            light -= doge::vec3{0.01f, 0.0f, 0.0f}; });
+         hid::on_key_down<hid::keyboard>('K', [&light]{
+            light -= doge::vec3{0.0f, 0.0f, 0.01f}; });
+         hid::on_key_down<hid::keyboard>('L', [&light]{
+            light += doge::vec3{0.01f, 0.0f, 0.0f}; });
       });
-      l.draw([]{});
+
+      auto const camera_projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
+      cube.draw([&camera, &cube, &engine, &camera_projection, &light](auto& view,
+         auto& light_position, auto& viewer_position, auto& model, auto& projection) {
+         view = camera.view();
+         light_position = light.position();
+         viewer_position = camera.position();
+         model = doge::mat4{1.0f};
+         projection = camera_projection;
+         doge::uniform(cube.program(), "normal_model", false,
+              model.get()
+            | doge::invert
+            | doge::transpose);
+      });
+      l.draw([&](auto& projection, auto& view, auto& model){
+         projection = camera_projection;
+         view = camera.view();
+         model = doge::mat4{1.0f}
+               | doge::translate(light.position())
+               | doge::scale(doge::vec3{0.2f});
+      });
    });
 }

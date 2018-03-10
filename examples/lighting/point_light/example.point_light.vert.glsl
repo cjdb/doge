@@ -7,7 +7,6 @@ out vec3 frag_position;
 out vec3 frag_normal;
 out vec2 frag_texture_coordinates;
 
-uniform vec3 light_position;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
