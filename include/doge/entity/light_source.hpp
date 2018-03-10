@@ -42,26 +42,26 @@ namespace doge {
       Light& operator+=(vec3 const& delta) noexcept
       {
          position_ += delta;
-         return *this;
+         return static_cast<Light&>(*this);
       }
 
       Light& operator-=(vec3 const& delta) noexcept
       {
          position_ -= delta;
-         return *this;
+         return static_cast<Light&>(*this);
       }
 
       Light& operator*=(float const scalar) noexcept
       {
          position_ *= scalar;
-         return *this;
+         return static_cast<Light&>(*this);
       }
 
       Light& operator/=(float const scalar) noexcept
       {
          Expects(scalar != 0.0f);
          position_ /= scalar;
-         return *this;
+         return static_cast<Light&>(*this);
       }
 
       vec3 const& ambient() const noexcept
