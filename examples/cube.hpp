@@ -23,11 +23,11 @@ namespace demo {
       }
 
       template <ranges::Invocable<doge::uniform<doge::mat4>&, doge::uniform<doge::vec3>&,
-         doge::uniform<doge::mat4>&> F>
+         doge::uniform<doge::vec3>&, doge::uniform<doge::mat4>&, doge::uniform<doge::mat4>&> F>
       void draw(const F& f)
       {
          program_.use([&, this]{
-            ranges::invoke(f, view_, position_, model_);
+            ranges::invoke(f, view_, light_position_, viewer_position_, model_, projection_);
 
             diffuse_map_.bind(gl::TEXTURE0);
             specular_map_.bind(gl::TEXTURE1);
@@ -53,9 +53,11 @@ namespace demo {
       doge::texture2d diffuse_map_;
       doge::texture2d specular_map_;
 
-      doge::uniform<doge::mat4> view_{program_, "view", false, {}};
-      doge::uniform<doge::vec3> position_{program_, "view_position", doge::vec3{}};
-      doge::uniform<doge::mat4> model_{program_, "model", false, {}};
+      doge::uniform<doge::mat4> view_{program(), "view", false, {}};
+      doge::uniform<doge::vec3> light_position_{program(), "light.position", doge::vec3{}};
+      doge::uniform<doge::vec3> viewer_position_{program(), "viewer_position", doge::vec3{}};
+      doge::uniform<doge::mat4> model_{program(), "model", false, {}};
+      doge::uniform<doge::mat4> projection_{program(), "projection", false, {}};
    };
 } // namespace demo
 

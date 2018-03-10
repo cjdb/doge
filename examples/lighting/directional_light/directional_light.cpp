@@ -46,21 +46,23 @@ int main()
       hid::on_key_down<hid::keyboard>('D', [&camera]{
          camera.move(doge::cardinality::east, doge::camera::free); });
 
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_UP, [&light]{
-         light = -doge::vec3{0.2f, 1.0f, 0.3f}; });
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_DOWN, [&light]{
-         light = doge::vec3{0.2f, 1.0f, 0.3f}; });
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_LEFT, [&light]{
-         light = -doge::vec3{1.0f, 0.3f, 0.2f}; });
-      hid::on_key_down<hid::keyboard>(GLFW_KEY_RIGHT, [&light]{
-         light = doge::vec3{0.3f, 0.2f, 1.0f}; });
+      cube.program().use([&]{
+         hid::on_key_down<hid::keyboard>(GLFW_KEY_UP, [&light]{
+            light = -doge::vec3{0.2f, 1.0f, 0.3f}; });
+         hid::on_key_down<hid::keyboard>(GLFW_KEY_DOWN, [&light]{
+            light = doge::vec3{0.2f, 1.0f, 0.3f}; });
+         hid::on_key_down<hid::keyboard>(GLFW_KEY_LEFT, [&light]{
+            light = -doge::vec3{1.0f, 0.3f, 0.2f}; });
+         hid::on_key_down<hid::keyboard>(GLFW_KEY_RIGHT, [&light]{
+            light = doge::vec3{0.3f, 0.2f, 1.0f}; });
+      });
 
-      cube.draw([&camera, &cube, &engine](auto& view, auto& position, auto& model) {
+      cube.draw([&camera, &cube, &engine](auto& view, auto& position, auto&, auto& model,
+         auto& projection) {
          view = camera.view();
          position = camera.position();
          model = doge::mat4{1.0f};
-         doge::uniform(cube.program(), "projection", false,
-            camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f));
+         projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
       });
    });
 }
