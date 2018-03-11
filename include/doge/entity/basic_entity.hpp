@@ -81,7 +81,8 @@ namespace doge {
 
       void pitch(angle const a) noexcept
       {
-         pitch_ = std::clamp(pitch() + a, -89.0_deg, 89.0_deg);
+         constexpr Regular max_angle = 89.0_deg;
+         pitch_ = std::clamp(pitch() + a, -max_angle, max_angle);
          change_direction();
       }
 
