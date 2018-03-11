@@ -2,6 +2,8 @@
 * Follow the [C++ Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md).
 * Except when using names provided by external libraries, spelling should conform to [Australian English](https://en.wikipedia.org/wiki/Australian_English). If in doubt, stick to British English, and it'll get flagged in the review.
 * Code should adopt East-`const`ness.
+  * If it can be `const`, it must be `const`.
+  * If it can be `constexpr`, it must be `constexpr`.
 * Variables should be declared like so:
 
 ```cpp
