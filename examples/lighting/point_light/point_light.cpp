@@ -45,7 +45,7 @@ int main()
    auto cube = demo::cube{cube_with_normal, "example.point_light", "resources/container"};
    auto camera = doge::camera{};
 
-   auto light = doge::point_light{cube.program(),
+   auto light = doge::point_lighting{cube.program(),
       {"light.position", doge::vec3{1.2f, 1.0f, 2.0f}},
       {"light.ambience", doge::unit<doge::vec3> * 0.2f},
       {"light.diffuse", doge::unit<doge::vec3> * 0.5f},
@@ -75,29 +75,25 @@ int main()
          hid::on_key_down<hid::keyboard>('U', [&light]{
             light += doge::vec3{0.0f, 0.01f, 0.0f}; });
          hid::on_key_down<hid::keyboard>('I', [&light]{
-            light += doge::vec3{0.0f, 0.0f, 0.01f}; });
+            light -= doge::vec3{0.0f, 0.0f, 0.01f}; });
          hid::on_key_down<hid::keyboard>('O', [&light]{
             light -= doge::vec3{0.0f, 0.01f, 0.0f}; });
          hid::on_key_down<hid::keyboard>('J', [&light]{
             light -= doge::vec3{0.01f, 0.0f, 0.0f}; });
          hid::on_key_down<hid::keyboard>('K', [&light]{
-            light -= doge::vec3{0.0f, 0.0f, 0.01f}; });
+            light += doge::vec3{0.0f, 0.0f, 0.01f}; });
          hid::on_key_down<hid::keyboard>('L', [&light]{
             light += doge::vec3{0.01f, 0.0f, 0.0f}; });
       });
 
       auto const camera_projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
       cube.draw([&camera, &cube, &engine, &camera_projection, &light](auto& view,
-         auto& light_position, auto& viewer_position, auto& model, auto& projection) {
+         auto& light_position, auto& model, auto& projection) {
          view = camera.view();
          light_position = light.position();
-         viewer_position = camera.position();
          model = doge::mat4{1.0f};
          projection = camera_projection;
-         doge::uniform(cube.program(), "normal_model", false,
-              model.get()
-            | doge::invert
-            | doge::transpose);
+         doge::uniform(cube.program(), "view_position", camera.position());
       });
       l.draw([&](auto& projection, auto& view, auto& model){
          projection = camera_projection;

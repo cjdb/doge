@@ -24,8 +24,8 @@ int main()
    auto cube = demo::cube{cube_with_normal, "example.directional_light", "resources/container"};
    auto camera = doge::camera{};
 
-   auto light = doge::directional_light{cube.program(),
-      {"light.direction", -doge::vec3{0.2f, 1.0f, 0.3f}},
+   auto light = doge::directional_lighting{cube.program(),
+      {"light.position", -doge::vec3{0.2f, 1.0f, 0.3f}},
       {"light.ambient", doge::unit<doge::vec3> * 0.2f},
       {"light.diffuse", doge::unit<doge::vec3> * 0.5f},
       {"light.specular", doge::unit<doge::vec3> * 0.5f}
@@ -46,7 +46,12 @@ int main()
       hid::on_key_down<hid::keyboard>('D', [&camera]{
          camera.move(doge::cardinality::east, doge::camera::free); });
 
-      cube.program().use([&]{
+      cube.draw([&camera, &cube, &engine, &light](auto& view, auto&, auto& model,
+         auto& projection) {
+         view = camera.view();
+         model = doge::mat4{1.0f};
+         projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
+
          hid::on_key_down<hid::keyboard>(GLFW_KEY_UP, [&light]{
             light = -doge::vec3{0.2f, 1.0f, 0.3f}; });
          hid::on_key_down<hid::keyboard>(GLFW_KEY_DOWN, [&light]{
@@ -55,14 +60,6 @@ int main()
             light = -doge::vec3{1.0f, 0.3f, 0.2f}; });
          hid::on_key_down<hid::keyboard>(GLFW_KEY_RIGHT, [&light]{
             light = doge::vec3{0.3f, 0.2f, 1.0f}; });
-      });
-
-      cube.draw([&camera, &cube, &engine](auto& view, auto& position, auto&, auto& model,
-         auto& projection) {
-         view = camera.view();
-         position = camera.position();
-         model = doge::mat4{1.0f};
-         projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
       });
    });
 }
