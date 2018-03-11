@@ -12,7 +12,7 @@ struct material_t {
 };
 
 struct light_t {
-   vec3 position;
+   vec3 direction;
    vec3 ambient;
    vec3 diffuse;
    vec3 specular;
@@ -29,7 +29,7 @@ void main()
 
    // diffuse
    const vec3 norm = normalize(frag_normal);
-   const vec3 light_direction = normalize(-light.position);
+   const vec3 light_direction = normalize(-light.direction);
    const float diff = max(dot(norm, light_direction), 0.0);
    const vec3 diffuse = light.diffuse * diff * texture(material.diffuse, frag_texture_coordinates).rgb;
 
