@@ -67,12 +67,12 @@ namespace doge {
          return *this;
       }
 
-      constexpr basic_angle operator+() noexcept
+      constexpr basic_angle operator+() const noexcept
       {
          return *this;
       }
 
-      constexpr basic_angle operator-() noexcept
+      constexpr basic_angle operator-() const noexcept
       {
          return basic_angle{-angle_};
       }
