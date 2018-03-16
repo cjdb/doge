@@ -109,9 +109,13 @@ namespace doge {
    protected:
       basic_entity() = default;
 
-      basic_entity(vec3 const& position, float const speed)
+      basic_entity(vec3 const& position, vec3 const& direction = front,
+         float const speed = default_speed, angle const pitch = 0.0_deg, angle const yaw = 0.0_deg)
          : position_{position},
-           speed_{speed}
+           direction_{direction},
+           speed_{speed},
+           pitch_{pitch},
+           yaw_{yaw}
       {}
 
       ~basic_entity() = default;
@@ -122,7 +126,7 @@ namespace doge {
       vec3 direction_ = front;
       float speed_ = default_speed;
       angle pitch_ = 0.0_deg;
-      angle yaw_ = -90.0_deg;
+      angle yaw_ = 0.0_deg;
 
       [[nodiscard]] vec3 direction(type const t) const noexcept
       {
@@ -154,6 +158,31 @@ namespace doge {
          direction_.z = ::doge::cos(pitch_) * ::doge::sin(yaw_);
          direction_ = glm::normalize(direction_);
       }
+   };
+
+   class drawable_entity : virtual public basic_entity {
+   protected:
+      drawable_entity(shader_binary program, vertex vertices, vec3 const& position,
+         vec3 const& direction = front, float const speed = default_speed,
+         angle const pitch = 0.0_deg, angle const yaw = 0.0_deg)
+         : basic_entity{position, direction, speed, pitch, yaw},
+           program_{std::move(program)},
+           vertices{std::move(vertices)}
+      {}
+
+      template <ranges::Invocable F>
+      void draw_impl(F const& f) const noexcept
+      {
+         program_.use([this, &f]{
+            ranges::invoke(f);
+            vertices_.bind([this]{
+               vertices_.draw(doge::vertex::triangles, 0, 36);
+            });
+         });
+      }
+   private:
+      shader_binary program_;
+      vertex vertices_;
    };
 } // namespace doge
 
