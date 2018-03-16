@@ -31,8 +31,9 @@ namespace doge {
    public:
       camera() = default;
 
-      camera(vec3 const& position, float const speed = default_speed) noexcept
-         : basic_entity{position, speed}
+      camera(vec3 const& position, vec3 const& direction = front, float const speed = default_speed,
+         angle const pitch = 0.0_deg, angle const yaw = -90.0_deg) noexcept
+         : basic_entity{position, direction, speed, pitch, yaw}
       {}
 
       [[nodiscard]] mat4 view() const noexcept
