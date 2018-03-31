@@ -49,51 +49,53 @@ namespace doge {
       constexpr bool is_texture_type_v = Kind == gl::TEXTURE_1D || Kind == gl::TEXTURE_2D ||
          Kind == gl::TEXTURE_3D;
 
+      template <typename T>
+      constexpr bool is_glm_vec = false;
+
       template <glm::length_t I, typename T, glm::qualifier Q>
-      constexpr bool is_glm_vec(const glm::vec<I, T, Q>&) noexcept
-      {
-         return true;
-      }
+      constexpr bool is_glm_vec<glm::vec<I, T, Q>> = true;
 
       template <typename T>
-      constexpr bool is_glm_vec(const T&) noexcept
-      {
-         return false;
-      }
+      struct vec_length {
+         static_assert(std::is_same_v<T, T*>, "T is not a glm::vec");
+      };
+
+      template <glm::length_t I, typename T, glm::qualifier Q>
+      struct vec_length<glm::vec<I, T, Q>> : std::integral_constant<glm::length_t, I> {};
+
+      template <typename T, glm::length_t N>
+      constexpr bool is_vecn = false;
+
+      template <typename T, glm::length_t N>
+      requires
+         is_glm_vec<T>
+      constexpr bool is_vecn<T, N> = vec_length<T>() == N;
+
+      template <typename Expected, typename T>
+      constexpr bool type_is_glm_vec = false;
+
+      template <typename T> constexpr bool is_vec2 = is_vecn<T, 2>;
+      template <typename T> constexpr bool is_vec3 = is_vecn<T, 3>;
+      template <typename T> constexpr bool is_vec4 = is_vecn<T, 4>;
 
       template <typename Expected, glm::length_t I, typename T, glm::qualifier Q>
       requires
          ranges::Same<T, Expected>
-      constexpr bool is_glm_vec_type(const glm::vec<I, T, Q>&) noexcept
-      {
-         return true;
-      }
+      constexpr bool type_is_glm_vec<Expected, glm::vec<I, T, Q>> = true;
 
       template <typename T>
-      constexpr bool is_glm_vec_type(const T&) noexcept
-      {
-         return false;
-      }
-
-      template <ranges::DefaultConstructible T>
-      constexpr bool is_glm_vec_v = doge::detail::is_glm_vec(T{});
-
-      template <ranges::DefaultConstructible T, typename U>
-      constexpr bool is_glm_vec_type_v = doge::detail::is_glm_vec_type<U>(T{});
-
-      template <typename T>
-      constexpr auto is_glm_matrix_v = is_one_of_v<T, glm::mat2, glm::mat2x3, glm::mat2x4,
+      constexpr auto is_glm_matrix = is_one_of_v<T, glm::mat2, glm::mat2x3, glm::mat2x4,
          glm::mat3, glm::mat3x2, glm::mat3x4, glm::mat4, glm::mat4x2, glm::mat4x3>;
 
       template <typename T, typename U = std::decay_t<T>>
-      constexpr auto is_glm_GLfloat_v = std::is_same_v<U, GLfloat> || is_glm_vec_type_v<U, GLfloat>
-         || is_glm_matrix_v<U>;
+      constexpr auto is_glm_GLfloat = std::is_same_v<U, GLfloat> || type_is_glm_vec<GLfloat, U>
+         || is_glm_matrix<U>;
 
       template <typename T, typename U = std::decay_t<T>>
-      constexpr auto is_glm_GLint_v = std::is_same_v<U, GLint> || is_glm_vec_type_v<U, GLint>;
+      constexpr auto is_glm_GLint = std::is_same_v<U, GLint> || type_is_glm_vec<GLint, U>;
 
       template <typename T, typename U = std::decay_t<T>>
-      constexpr auto is_glm_GLuint_v = std::is_same_v<U, GLuint> || is_glm_vec_type_v<U, GLuint>;
+      constexpr auto is_glm_GLuint = std::is_same_v<U, GLuint> || type_is_glm_vec<GLuint, U>;
    } // namespace detail
 } // namespace doge
 

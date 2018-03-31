@@ -15,13 +15,13 @@
 //
 #include "../../static_objects.hpp"
 #include <gl/gl_core.hpp>
-#include <doge/engine.hpp>
-#include <doge/gl/vertex_array.hpp>
-#include <doge/gl/shader_binary.hpp>
-#include <doge/gl/shader_source.hpp>
-#include <doge/gl/uniform.hpp>
-#include <doge/utility/screen_data.hpp>
-#include <doge/hid.hpp>
+#include "doge/engine.hpp"
+#include "doge/gl/vertex_array.hpp"
+#include "doge/gl/shader_binary.hpp"
+#include "doge/gl/shader_source.hpp"
+#include "doge/gl/uniform.hpp"
+#include "doge/utility/screen_data.hpp"
+#include "doge/hid.hpp"
 #include <experimental/ranges/concepts>
 #include <glm/vec3.hpp>
 #include <vector>
@@ -36,9 +36,7 @@ int main()
       std::make_pair(doge::shader_source::fragment, "offset.frag.glsl")}};
    auto v = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, coloured_triangle, 6, {3, 3}};
 
-   program.use([&]{
-      doge::uniform(program, "offset", 0.5f);
-   });
+   doge::uniform(program, "offset", 0.5f);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });

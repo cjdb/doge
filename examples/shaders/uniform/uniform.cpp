@@ -34,7 +34,6 @@ int main()
       std::make_pair(doge::shader_source::vertex, "uniform.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "uniform.frag.glsl")}};
    auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, triangle[0], 3, {3}};
-   auto out_colour = gl::GetUniformLocation(program.index(), "out_colour");
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -42,13 +41,13 @@ int main()
       gl::ClearColor(0.2f, 0.3f, 0.4f, 1.0f);
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
-      program.use([out_colour, &vbo]{
-         vbo.bind([&out_colour, &vbo]{
-            using std::experimental::ranges::Regular;
-            Regular time = glfwGetTime();
-            Regular green = (std::sin(time) / 2.0f) + 0.5f;
-            doge::uniform(out_colour, glm::vec4{0.0f, green, 0.0f, 1.0f});
+      program.use([&program, &vbo]{
+         using std::experimental::ranges::Regular;
+         Regular time = glfwGetTime();
+         Regular green = (std::sin(time) / 2.0f) + 0.5f;
+         doge::uniform(program, "out_colour", glm::vec4{0.0f, green, 0.0f, 1.0f});
 
+         vbo.bind([&vbo]{
             vbo.draw(doge::vertex::triangles, 0, 3);
          });
       });

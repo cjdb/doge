@@ -39,7 +39,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 ## Debug flags
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fno-inline -fstack-protector-all -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
+
+if (NOT WIN32)
+   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
+endif()
 
 ## Release flags
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g0 -DNDEBUG")
@@ -68,31 +71,45 @@ if (NOT ${DOGE_GLFW_PATH} EQUAL "")
    link_directories("${DOGE_GLFW_PATH}/lib")
 endif()
 
+message(STATUS "GLFW path: ${DOGE_GLFW_PATH}")
+
 if (NOT ${DOGE_GLM_PATH} EQUAL "")
    include_directories("${DOGE_GLM_PATH}/include")
 endif()
+
+message(STATUS "GLM path: ${DOGE_GLM_PATH}")
 
 if (NOT ${DOGE_GLI_PATH} EQUAL "")
    include_directories("${DOGE_GLI_PATH}/include")
 endif()
 
+message(STATUS "GLI path: ${DOGE_GLI_PATH}")
+
 if (NOT ${DOGE_CMCSTL2_PATH} EQUAL "")
    include_directories("${DOGE_CMCSTL2_PATH}/include")
 endif()
+
+message(STATUS "cmcstl2 path: ${DOGE_CMCSTL2_PATH}")
 
 if (NOT ${DOGE_GSL_PATH} EQUAL "")
    include_directories("${DOGE_GSL_PATH}/include")
 endif()
 
+message(STATUS "GSL path: ${DOGE_GSL_PATH}")
+
 if (NOT ${DOGE_STB_IMAGE_PATH} EQUAL "")
    include_directories("${DOGE_STB_IMAGE_PATH}")
 endif()
 
+message(STATUS "STB Image path: ${DOGE_STB_IMAGE_PATH}")
+
 if (NOT ${DOGE_CATCH2_PATH} EQUAL "")
-   include_directories("${DOGE_CATCH2_PATH}")
+   include_directories("${DOGE_CATCH2_PATH}/include")
 endif()
 
 include_directories("${CMAKE_BINARY_DIR}/scope_guard/workspace/P0052_scope_exit/src")
+message(STATUS "Catch2 path: ${DOGE_CATCH2_PATH}")
+
 add_subdirectory(source)
 
 function(copy_shaders)
