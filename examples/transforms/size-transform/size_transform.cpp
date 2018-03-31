@@ -42,9 +42,7 @@ int main()
    auto vbo = std::vector(2, doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, rectangle,
       {0, 1, 3, 1, 2, 3}, 5, {3, 2}});
 
-   ranges::Regular transform = program.use([&tex, &program]{
-      return doge::uniform(program, "transform");
-   });
+   auto transform = doge::uniform(program, "transform", false, glm::mat4{1.0f});
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -59,18 +57,18 @@ int main()
          const Regular time = gsl::narrow_cast<float>(glfwGetTime());
 
          vbo[0].bind([&time, &transform, &vbo]{
-            doge::uniform(transform, false,
-               glm::mat4(1.0f) | doge::translate({0.5f, -0.5f, 0.0f})
-                                 | doge::rotate(doge::angle{time}, {0.0f, 0.0f, 1.0f})
-                                 | doge::scale({0.5f, 0.5f, 0.5f}));
+            transform = glm::mat4(1.0f)
+                      | doge::translate({0.5f, -0.5f, 0.0f})
+                      | doge::rotate(doge::angle{time}, {0.0f, 0.0f, 1.0f})
+                      | doge::scale({0.5f, 0.5f, 0.5f});
             vbo[0].draw(doge::vertex::triangles);
          });
 
          vbo[1].bind([&time, &transform, &vbo]{
             const Regular scale = gsl::narrow_cast<float>(std::abs(std::cos(time)));
-            doge::uniform(transform, false,
-               glm::mat4(1.0f) | doge::translate({-0.5f, 0.5f, 0.0f})
-                                 | doge::scale({scale, scale, 1.0f}));
+            transform = glm::mat4(1.0f)
+                      | doge::translate({-0.5f, 0.5f, 0.0f})
+                      | doge::scale({scale, scale, 1.0f});
             vbo[1].draw(doge::vertex::triangles);
          });
       });

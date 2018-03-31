@@ -71,7 +71,7 @@ namespace doge {
 
    template <texture_t Kind, typename V>
    requires
-      detail::is_glm_vec_type_v<V, GLfloat>
+      detail::type_is_glm_vec<GLfloat, V>
    void texture_parameter(const basic_texture<Kind>&, GLenum pname, const V& params) noexcept
    {
       gl::TexParameterfv(static_cast<GLenum>(Kind), pname, std::addressof(params));
@@ -90,7 +90,7 @@ namespace doge {
 
    template <texture_t Kind, typename V>
    requires
-      detail::is_glm_vec_type_v<V, GLint>
+      detail::type_is_glm_vec<GLint, V>
    void texture_parameter(const basic_texture<Kind>&, GLenum pname, const V& params) noexcept
    {
       gl::TexParameterIiv(static_cast<GLenum>(Kind), pname, std::addressof(params));
@@ -108,7 +108,7 @@ namespace doge {
 
    template <texture_t Kind, typename V>
    requires
-      detail::is_glm_vec_type_v<V, GLuint>
+      detail::type_is_glm_vec<GLuint, V>
    void texture_parameter(const basic_texture<Kind>&, GLenum pname, const V& params) noexcept
    {
       gl::TexParameterIuiv(static_cast<GLenum>(Kind), pname, std::addressof(params));
@@ -206,6 +206,13 @@ namespace doge {
    void mag_filter(const basic_texture<Kind>& tex, const minmag_t filter) noexcept
    {
       doge::texture_parameter(tex, gl::TEXTURE_MAG_FILTER, static_cast<GLint>(filter));
+   }
+
+   template <texture_t Kind>
+   basic_texture<Kind> make_texture_map(std::string const& texture_path)
+   {
+      return {texture_path, {doge::texture_wrap_t::repeat, doge::texture_wrap_t::repeat},
+         doge::minmag_t::linear, doge::minmag_t::linear};
    }
 
    template <texture_t Kind>

@@ -1,2 +1,2 @@
-add_executable(transform.size size_transform.cpp)
-link_core(transform.size)
+add_executable(doge.examples.transforms.size size_transform.cpp)
+link_core(doge.examples.transforms.size)
