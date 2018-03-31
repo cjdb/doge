@@ -17,9 +17,10 @@
 #define DOGE_GL_UNIFORM_HPP
 
 #include <cassert>
+#include "doge/detail/gl_invocable.hpp"
 #include "doge/gl/cast.hpp"
 #include "doge/gl/shader_binary.hpp"
-#include "doge/detail/gl_invocable.hpp"
+#include "doge/gl/gl_error.hpp"
 #include <gl/gl_core.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -483,7 +484,7 @@ namespace doge {
          noexcept(noexcept(std::is_nothrow_constructible_v<T, T2> && std::is_nothrow_copy_assignable_v<T>))
       {
          data_.value_ = gsl::narrow_cast<T>(std::forward<T2>(t));
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -513,7 +514,7 @@ namespace doge {
       uniform& operator+=(const T2& t2) noexcept
       {
          data_.value_ += t2;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -533,7 +534,7 @@ namespace doge {
       uniform& operator-=(const T2& t2) noexcept
       {
          data_.value_ -= t2;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -553,7 +554,7 @@ namespace doge {
       uniform& operator*=(const T2& t2) noexcept
       {
          data_.value_ *= t2;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -574,7 +575,7 @@ namespace doge {
       {
          Expects(t2 != T2{});
          data_.value_ /= t2;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -599,7 +600,7 @@ namespace doge {
       {
          Expects(t2 != T2{});
          data_.value_ %= t2;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -611,7 +612,7 @@ namespace doge {
       }
       {
          ++data_.value_;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -635,7 +636,7 @@ namespace doge {
       }
       {
          --data_.value_;
-         set_uniform();
+         set_uniform("");
          return *this;
       }
 
@@ -948,10 +949,7 @@ namespace doge {
          : data_{f1, static_cast<GLuint>(program), ::doge::detail::find_location(program, id),
             std::forward<Args>(args)...}
       {
-         set_uniform();
-         if (auto error = gl::GetError(); error != gl::NO_ERROR_)
-            throw std::runtime_error{"Error " + std::to_string(error) + "with '" + std::string{id}
-               + "'"};
+         set_uniform(id);
       }
 
       template <typename F, glm::length_t C, glm::length_t R, typename T2, glm::qualifier Q>
@@ -988,7 +986,7 @@ namespace doge {
          : uniform{set_constructor_t{}, program, id, f1, v.x, v.y, v.z, v.w}
       {}
 
-      void set_uniform()
+      void set_uniform(const std::string_view id)
       {
          if constexpr (is_one_of_v<T, GLfloat, GLint, GLuint>) {
             ranges::invoke(data_.set_uniform_, data_.location_, data_.value_);
@@ -1008,6 +1006,8 @@ namespace doge {
             ranges::invoke(data_.set_uniform_, data_.location_, data_.count_, data_.transpose_,
                glm::value_ptr(data_.value_));
          }
+
+         check_error(std::string{id});
       }
    };
 
