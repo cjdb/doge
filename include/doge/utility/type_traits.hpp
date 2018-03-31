@@ -32,6 +32,18 @@ namespace doge {
    template <typename T>
    using remove_cv_pointer_t = std::remove_cv_t<std::remove_pointer_t<T>>;
 
+   template <typename T>
+   struct underlying_type {
+      using type = T;
+   };
+
+   template <typename T>
+   requires requires { typename ranges::value_type_t<T>; }
+   struct underlying_type<T> {
+      using type = ranges::value_type_t<T>;
+   };
+
+
    namespace detail {
       template <GLenum Kind>
       constexpr bool is_texture_type_v = Kind == gl::TEXTURE_1D || Kind == gl::TEXTURE_2D ||
