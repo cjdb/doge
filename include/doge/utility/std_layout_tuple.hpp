@@ -22,7 +22,9 @@ namespace doge {
    namespace ranges = std::experimental::ranges;
 
    template <typename... Ts>
-   class std_layout_tuple;
+   requires
+      (StandardLayout<Ts> && ...)
+   struct std_layout_tuple;
 
    template <int I, typename T>
    class tuple_element;
@@ -114,15 +116,10 @@ namespace doge {
    {
       t.template get<T>();
    }
-
-   template <typename... Ts>
-   requires
-      (StandardLayout<Ts> && ...)
-   struct std_layout_tuple;
    
    template <>
    struct std_layout_tuple<> {
-      constexpr void swap(std_layout_tuple& t) noexcept {}
+      constexpr void swap(std_layout_tuple&) noexcept {}
 
       // [std_layout_tuple.rel]
       constexpr bool operator==(std_layout_tuple const&) const noexcept
@@ -322,11 +319,11 @@ namespace doge {
       template <typename U, typename... UTypes>
       requires
          sizeof...(Ts) == sizeof...(UTypes) &&
-         ranges::EqualityComparableWith<T, U> &&
-         (ranges::EqualityComparableWith<Ts, UTypes> && ...)
-      friend constexpr bool operator==(std_layout_tuple const& a, std_layout_tuple<UTypes...> const& b) noexcept
+         ranges::EqualityComparableWith<T, U>
+      constexpr bool operator==(std_layout_tuple<U, UTypes...> const& b) const noexcept
       {
-         return a.x_ == b.x_ && a.rest_ == b.rest_;
+         static_assert((ranges::EqualityComparableWith<Ts, UTypes> && ...));
+         return x_ == b.x_ && rest_ == b.rest_;
       }
 
       template <typename U, typename... UTypes>
