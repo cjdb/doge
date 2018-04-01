@@ -39,7 +39,7 @@ int main()
       std::make_pair(doge::shader_source::fragment, "coordinates.example.frag.glsl")}};
 
    auto tex = make_awesomeface(program);
-   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, textured_cubes, 5, {3, 2}};
+   auto vbo = doge::vertex_array_buffer{textured_cubes};
 
    auto camera = doge::camera{};
    auto projection = doge::uniform(program, "projection", false, glm::mat4{});
@@ -97,14 +97,12 @@ int main()
          projection = camera.project(engine.screen().aspect_ratio(), 0.1f, 100.0f);
          view = camera.view();
 
-         vbo.bind([&]{
-            for (const Regular& i : cube_positions) {
-               model = glm::mat4{1.0f}
-                     | doge::translate(i)
-                     | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f});
-               vbo.draw(doge::vertex::triangles, 0, 36);
-            }
-         });
+         for (const Regular& i : cube_positions) {
+            model = glm::mat4{1.0f}
+                  | doge::translate(i)
+                  | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f});
+            vbo.draw([]{});
+         }
       });
    });
 }

@@ -22,8 +22,8 @@
 #include "doge/gl/uniform.hpp"
 #include "doge/utility/screen_data.hpp"
 #include "doge/hid.hpp"
+#include "doge/types.hpp"
 #include <experimental/ranges/concepts>
-#include <glm/vec3.hpp>
 #include <vector>
 
 using std::experimental::ranges::Regular;
@@ -31,12 +31,14 @@ using std::experimental::ranges::Regular;
 int main()
 {
    auto engine = doge::engine{};
+
    auto program = doge::shader_binary{{
       std::make_pair(doge::shader_source::vertex, "offset.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "offset.frag.glsl")}};
-   auto v = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, coloured_triangle, 6, {3, 3}};
+   auto v = doge::vertex_array_buffer<doge::vec3, doge::vec3>{{ranges::data(coloured_triangle),
+      gsl::narrow_cast<long long>(ranges::size(coloured_triangle))}};
 
-   doge::uniform(program, "offset", 0.5f);
+   program.use([&program]{ doge::uniform(program, "offset", 0.5f); });
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -45,9 +47,7 @@ int main()
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
       program.use([&v]{
-         v.bind([&v]{
-            v.draw(doge::vertex::triangles, 0, 3);
-         });
+         v.draw([]{});
       });
    });
 }

@@ -9,11 +9,11 @@ namespace demo {
    class cube {
    public:
       template <class Light>
-      cube(std::shared_ptr<std::vector<GLfloat>> const& vertices, std::string const& basic_shader_path,
-         std::string const& basic_map_path, Light const& light,
-         std::string_view const light_position, std::string_view const ambient,
+      cube(std::vector<doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>> const& vertices,
+         std::string const& basic_shader_path, std::string const& basic_map_path,
+         Light const& light, std::string_view const light_position, std::string_view const ambient,
          std::string_view const diffuse, std::string_view const specular)
-         : vertices_{gl::ARRAY_BUFFER, gl::STATIC_DRAW, vertices, 8, {3, 3, 2}},
+         : vertices_{vertices},
            program_{doge::make_shader(basic_shader_path)},
            diffuse_map_{doge::make_texture_map<doge::texture_t::texture_2d>(basic_map_path + "_diffuse.png")},
            specular_map_{doge::make_texture_map<doge::texture_t::texture_2d>(basic_map_path + "_specular.png")},
@@ -52,14 +52,12 @@ namespace demo {
             diffuse_map_.bind(gl::TEXTURE0);
             specular_map_.bind(gl::TEXTURE1);
 
-            vertices_.bind([&]{
-               for (auto i = doge::zero(cube_positions); i < ranges::size(cube_positions); ++i) {
-                  model_ = doge::mat4{1.0f}
-                         | doge::translate(cube_positions[i])
-                         | doge::rotate(doge::as_radians<float>(20.0f * i), {0.5f, 1.0f, 0.5f});
-                  vertices_.draw(doge::vertex::triangles, 0, 36);
-               }
-            });
+            for (auto i = doge::zero(cube_positions); i < ranges::size(cube_positions); ++i) {
+               model_ = doge::mat4{1.0f}
+                      | doge::translate(cube_positions[i])
+                      | doge::rotate(doge::as_radians<float>(20.0f * i), {0.5f, 1.0f, 0.5f});
+               vertices_.draw([]{});
+            }
          });
       }
 
@@ -68,7 +66,7 @@ namespace demo {
          return program_;
       }
    private:
-      doge::vertex vertices_;
+      doge::vertex_array_buffer<doge::vec3, doge::vec3, doge::vec2> vertices_;
       doge::shader_binary program_;
       doge::texture2d diffuse_map_;
       doge::texture2d specular_map_;

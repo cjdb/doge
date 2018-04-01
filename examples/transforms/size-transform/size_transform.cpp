@@ -39,8 +39,13 @@ int main()
       std::make_pair(doge::shader_source::fragment, "transform.frag.glsl")}};
 
    auto tex = make_awesomeface(program);
-   auto vbo = std::vector(2, doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, rectangle,
-      {0, 1, 3, 1, 2, 3}, 5, {3, 2}});
+   auto vbo = []{
+      auto result = std::vector<doge::vertex_element_buffer<doge::vec3, doge::vec2>>{};
+      auto elements = std::vector<GLuint>{0, 1, 3, 1, 2, 3};
+      result.emplace_back(rectangle, elements);
+      result.emplace_back(rectangle, gsl::span<GLuint>{elements});
+      return result;
+   }();
 
    auto transform = doge::uniform(program, "transform", false, glm::mat4{1.0f});
 
@@ -56,21 +61,21 @@ int main()
 
          const Regular time = gsl::narrow_cast<float>(glfwGetTime());
 
-         vbo[0].bind([&time, &transform, &vbo]{
+         {
             transform = glm::mat4(1.0f)
                       | doge::translate({0.5f, -0.5f, 0.0f})
                       | doge::rotate(doge::angle{time}, {0.0f, 0.0f, 1.0f})
                       | doge::scale({0.5f, 0.5f, 0.5f});
-            vbo[0].draw(doge::vertex::triangles);
-         });
+            vbo[0].draw([]{});
+         }
 
-         vbo[1].bind([&time, &transform, &vbo]{
+         {
             const Regular scale = gsl::narrow_cast<float>(std::abs(std::cos(time)));
             transform = glm::mat4(1.0f)
                       | doge::translate({-0.5f, 0.5f, 0.0f})
                       | doge::scale({scale, scale, 1.0f});
-            vbo[1].draw(doge::vertex::triangles);
-         });
+            vbo[1].draw([]{});
+         }
       });
    });
 }

@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "../../static_objects.hpp"
+#include <array>
 #include "doge/engine.hpp"
 #include "doge/gl/vertex_array.hpp"
 #include "doge/gl/shader_binary.hpp"
@@ -29,9 +30,23 @@
 namespace ranges = std::experimental::ranges;
 using ranges::Regular;
 
+void debug_messaging(GLenum const source, GLenum const type, GLuint const id, GLenum const severity,
+   GLsizei const length, GLchar const* const message,  void const* const) {
+    std::cerr << (type == gl::DEBUG_TYPE_ERROR ? "OpenGL error:" : "OpenGL message:") << '\n'
+      << "\tsource: " << std::hex << source << "\n"
+         "\tid: " << id << "\n"
+         "\ttype: " << type << "\n"
+         "\tseverity: " << severity << "\n"
+         "\tlength: " << length << "\n"
+         "\tmessage: \"" << message << "\"\n"
+      << std::dec;
+}
+
 int main()
 {
    auto engine = doge::engine{};
+   gl::Enable(gl::DEBUG_OUTPUT);
+   gl::DebugMessageCallback(debug_messaging, nullptr);
 
    auto program = doge::shader_binary{{
       std::make_pair(doge::shader_source::vertex, "coordinates.example.vert.glsl"),
@@ -39,8 +54,7 @@ int main()
 
    auto tex = make_awesomeface(program);
 
-   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, textured_cubes, {0, 1, 3, 1, 2, 3}, 5,
-      {3, 2}};
+   auto vbo = doge::vertex_array_buffer{textured_cubes};
 
    doge::uniform(program, "projection", false, glm::perspective(glm::radians(45.0f),
       engine.screen().aspect_ratio(), 0.1f, 100.0f));
@@ -55,17 +69,17 @@ int main()
       gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
       program.use([&]{
-         for (auto i = decltype(tex.size()){}; i != tex.size(); ++i)
+         for (auto i = decltype(tex.size()){}; i != tex.size(); ++i) {
             tex[i].bind(gl::TEXTURE0 + i);
+         }
 
-         vbo.bind([&]{
-            for (const Regular& i : cube_positions) {
-               model = glm::mat4{1.0f}
-                     | doge::translate(i)
-                     | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f});
-               vbo.draw(doge::vertex::triangles, 0, 36);
-            }
-         });
+         for (const Regular& i : cube_positions) {
+            model = glm::mat4{1.0f}
+                  | doge::translate(i)
+                  | doge::rotate(doge::as_radians<float>(glfwGetTime() * -50.0), {0.5f, 1.0f, 0.5f});
+
+            vbo.draw([]{});
+         }
       });
    });
 }
