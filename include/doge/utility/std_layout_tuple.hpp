@@ -3,6 +3,7 @@
 
 #include <experimental/ranges/concepts>
 #include <experimental/ranges/utility>
+#include <tuple>
 #include <type_traits>
 
 namespace doge {
@@ -37,28 +38,28 @@ namespace doge {
    requires (I < sizeof...(Types))
    constexpr tuple_element_t<I, std_layout_tuple<Types...>>& get(std_layout_tuple<Types...>& t) noexcept
    {
-      return t.template get<I>();
+      return t.template get_helper<I>();
    }
 
    template <int I, typename... Types>
    requires (I < sizeof...(Types))
    constexpr tuple_element_t<I, std_layout_tuple<Types...>> const& get(std_layout_tuple<Types...> const& t) noexcept
    {
-      return t.template get<I>();
+      return t.template get_helper<I>();
    }
 
    template <int I, typename... Types>
    requires (I < sizeof...(Types))
    constexpr tuple_element_t<I, std_layout_tuple<Types...>>&& get(std_layout_tuple<Types...>&& t) noexcept
    {
-      return t.template get<I>();
+      return t.template get_helper<I>();
    }
 
    template <int I, typename... Types>
    requires (I < sizeof...(Types))
    constexpr tuple_element_t<I, std_layout_tuple<Types...>> const&& get(std_layout_tuple<Types...> const&& t) noexcept
    {
-      return t.template get<I>();
+      return t.template get_helper<I>();
    }
 
    template <typename Expected>
@@ -93,28 +94,28 @@ namespace doge {
    requires (exactly_one_of<T, Ts...>)
    constexpr T& get(std_layout_tuple<Ts...>& t) noexcept
    {
-      t.template get<T>();
+      t.template get_helper<T>();
    }
 
    template <typename T, typename... Ts>
    requires (exactly_one_of<T, Ts...>)
    constexpr T const& get(std_layout_tuple<Ts...> const& t) noexcept
    {
-      t.template get<T>();
+      t.template get_helper<T>();
    }
 
    template <typename T, typename... Ts>
    requires (exactly_one_of<T, Ts...>)
    constexpr T&& get(std_layout_tuple<Ts...>&& t) noexcept
    {
-      t.template get<T>();
+      t.template get_helper<T>();
    }
 
    template <typename T, typename... Ts>
    requires (exactly_one_of<T, Ts...>)
    constexpr T const&& get(std_layout_tuple<Ts...> const&& t) noexcept
    {
-      t.template get<T>();
+      t.template get_helper<T>();
    }
    
    template <>
@@ -153,9 +154,107 @@ namespace doge {
       }
    };
 
+   template <typename... Ts>
+   struct tuple_data;
+
+   template <typename T>
+   struct tuple_data<T> {
+      T x_;
+
+      void swap(tuple_data& t) noexcept
+      {
+         ranges::swap(t.x_, x_);
+      }
+
+      template <typename U>
+      friend bool operator==(tuple_data const& a, tuple_data<U> const& b) noexcept
+      {
+         return a.x_ == b.x_;
+      }
+
+      template <typename U>
+      friend bool operator!=(tuple_data const& a, tuple_data<U> const& b) noexcept
+      {
+         return !(a == b);
+      }
+
+      template <typename U>
+      friend bool operator<(tuple_data const& a, tuple_data<U> const& b) noexcept
+      {
+         return ((bool)(a.x_ < b.x_) || not((bool)(b.x_ < a.x_)));
+      }
+
+      template <typename U>
+      friend bool operator>(tuple_data const& a, tuple_data<U> const& b) noexcept
+      {
+         return b < a;
+      }
+
+      template <typename U>
+      friend bool operator<=(tuple_data const& a, tuple_data<U> const& b) noexcept
+      {
+         return not (a > b);
+      }
+
+      template < typename U>
+      friend bool operator>=(tuple_data const& a, tuple_data<U> const& b) noexcept
+      {
+         return not (a < b);
+      }
+   };
+
+   template <typename T, typename... Ts>
+   struct tuple_data<T, Ts...> {
+      T x_;
+      tuple_data<Ts...> rest_;
+
+      void swap(tuple_data& t) noexcept
+      {
+         ranges::swap(t.x_, x_);
+         ranges::swap(t.rest_, rest_);
+      }
+
+      template <typename... Us>
+      friend bool operator==(tuple_data const& a, tuple_data<Us...> const& b) noexcept
+      {
+         return a.x_ == b.x_ && a.rest_ == b.rest_;
+      }
+
+      template <typename... Us>
+      friend bool operator!=(tuple_data const& a, tuple_data<Us...> const& b) noexcept
+      {
+         return !(a == b);
+      }
+
+      template <typename... Us>
+      friend bool operator<(tuple_data const& a, tuple_data<Us...> const& b) noexcept
+      {
+         return ((bool)(a.x_ < b.x_) || not((bool)(b.x_ < a.x_))) && a.rest_ < b.rest_;
+      }
+
+      template <typename... Us>
+      friend bool operator>(tuple_data const& a, tuple_data<Us...> const& b) noexcept
+      {
+         return b < a;
+      }
+
+      template <typename... Us>
+      friend bool operator<=(tuple_data const& a, tuple_data<Us...> const& b) noexcept
+      {
+         return not (a > b);
+      }
+
+      template <typename... Us>
+      friend bool operator>=(tuple_data const& a, tuple_data<Us...> const& b) noexcept
+      {
+         return not (a < b);
+      }
+   };
+
    template <typename T, typename... Ts>
    requires
-      StandardLayout<T> && (StandardLayout<Ts> && ...)
+      StandardLayout<T> && (StandardLayout<Ts> && ...) &&
+      not std::is_reference_v<T> && (not std::is_reference_v<Ts> && ...)
    class std_layout_tuple<T, Ts...> {
    public:
       // (1)
@@ -170,16 +269,14 @@ namespace doge {
       constexpr explicit std_layout_tuple(T const& x, Ts const&... rest) noexcept(noexcept(
          std::is_nothrow_copy_constructible_v<T> &&
          (std::is_nothrow_copy_constructible_v<Ts> && ...)))
-         : x_{x},
-           rest_{rest...}
+         : data_{x, rest...}
       {}
 
       // (3)
       template <typename U, typename... UTypes>
       requires (sizeof...(UTypes) == sizeof...(Ts))
       constexpr explicit std_layout_tuple(U&& x, UTypes&&... rest)
-         : x_{std::forward<U>(x)},
-           rest_{std::forward<UTypes>(rest)...}
+         : data_{std::forward<U>(x), std::forward<UTypes>(rest)...}
       {}
 
       std_layout_tuple(std_layout_tuple const&)
@@ -198,8 +295,7 @@ namespace doge {
       constexpr explicit std_layout_tuple(std_layout_tuple<U, UTypes...> const& other) noexcept(noexcept(
          std::is_nothrow_constructible_v<T, U> &&
          (std::is_nothrow_constructible_v<Ts, UTypes> && ...)))
-         : x_{other.x_},
-           rest_{other.rest_}
+         : data_{other.x_, other.rest_}
       {}
 
       // (5)
@@ -208,22 +304,19 @@ namespace doge {
       constexpr explicit std_layout_tuple(std_layout_tuple<U, UTypes...>&& other) noexcept(noexcept(
          std::is_nothrow_constructible_v<T, U&&> &&
          (std::is_nothrow_constructible_v<Ts, UTypes&&> && ...)))
-         : x_{std::forward<U>(other.x_)},
-           rest_{std::forward<UTypes>(other.rest_)...}
+         : data_{std::forward<U>(other.x_), std::forward<UTypes>(other.rest_)...}
       {}
 
       // (6)
       template <typename U1, typename U2>
       constexpr explicit std_layout_tuple(std::pair<U1, U2> const& p)
-      : x_{p.first},
-        rest_{p.second}
+      : data_{p.first, p.second}
       {}
 
       // (7)
       template <typename U1, typename U2>
       constexpr explicit std_layout_tuple(std::pair<U1, U2>&& p)
-         : x_{std::forward<U1>(p.first)},
-           rest_{std::forward<U2>(p.second)}
+         : data_{std::forward<U1>(p.first), std::forward<U2>(p.second)}
       {}
 
       std_layout_tuple& operator=(std_layout_tuple const&)
@@ -245,8 +338,8 @@ namespace doge {
       std_layout_tuple& operator=(std_layout_tuple<U, UTypes...> const& t)
       {
          static_assert((ranges::Assignable<Ts&, UTypes const&> && ...));
-         x_ = t.x_;
-         rest_ = t.rest_;
+         data_.x_ = t.data_.x_;
+         data_.rest_ = t.data_.rest_;
          return *this;
       }
 
@@ -257,8 +350,8 @@ namespace doge {
       std_layout_tuple& operator=(std_layout_tuple<U, UTypes...>&& t)
       {
          static_assert((... && ranges::Assignable<Ts&, UTypes&&>));
-         x_ = std::forward<T>(t.x_);
-         rest_ = std::move(t.rest_);
+         data_.x_ = std::forward<T>(t.data_.x_);
+         data_.rest_ = std::move(t.data_.rest_);
          return *this;
       }
 
@@ -269,8 +362,8 @@ namespace doge {
          (ranges::Assignable<Ts&, U2 const&> && ...)
       std_layout_tuple& operator=(std::pair<U1, U2> const& p)
       {
-         get<0>() = p.first;
-         get<1>() = p.second;
+         get_helper<0>() = p.first;
+         get_helper<1>() = p.second;
          return *this;
       }
 
@@ -281,8 +374,8 @@ namespace doge {
          (ranges::Assignable<Ts&, U2&&> && ...)
       std_layout_tuple& operator=(std::pair<U1, U2>&& p)
       {
-         get<0>() = std::forward<U1>(p.first);
-         get<1>() = std::forward<U2>(p.second);
+         get_helper<0>() = std::forward<U1>(p.first);
+         get_helper<1>() = std::forward<U2>(p.second);
          return *this;
       }
 
@@ -293,18 +386,17 @@ namespace doge {
          ranges::Swappable<T> &&
          (ranges::Swappable<Ts> && ...) 
       {
-         ranges::swap(x_, t.x_);
-         rest_.swap(t.rest_);
+         data_.swap(t.data_);
       }
 
-      template <int I>
-      friend constexpr tuple_element_t<I, std_layout_tuple>& get(std_layout_tuple&);
-      template <int I>
-      friend constexpr tuple_element_t<I, std_layout_tuple> const& get(std_layout_tuple const&);
-      template <int I>
-      friend constexpr tuple_element_t<I, std_layout_tuple>&& get(std_layout_tuple&&);
-      template <int I>
-      friend constexpr tuple_element_t<I, std_layout_tuple> const&& get(std_layout_tuple const&&);
+      template <int I, typename... UTypes>
+      friend constexpr tuple_element_t<I, std_layout_tuple>& get(std_layout_tuple<UTypes...>&);
+      template <int I, typename... UTypes>
+      friend constexpr tuple_element_t<I, std_layout_tuple> const& get(std_layout_tuple<UTypes...> const&);
+      template <int I, typename... UTypes>
+      friend constexpr tuple_element_t<I, std_layout_tuple>&& get(std_layout_tuple<UTypes...>&&);
+      template <int I, typename... UTypes>
+      friend constexpr tuple_element_t<I, std_layout_tuple> const&& get(std_layout_tuple<UTypes...> const&&);
 
       template <typename U>
       friend constexpr T& get(std_layout_tuple&);
@@ -320,10 +412,10 @@ namespace doge {
       requires
          sizeof...(Ts) == sizeof...(UTypes) &&
          ranges::EqualityComparableWith<T, U>
-      constexpr bool operator==(std_layout_tuple<U, UTypes...> const& b) const noexcept
+      friend constexpr bool operator==(std_layout_tuple const& a, std_layout_tuple<U, UTypes...> const& b) noexcept
       {
          static_assert((ranges::EqualityComparableWith<Ts, UTypes> && ...));
-         return x_ == b.x_ && rest_ == b.rest_;
+         return a.data_ == b.data_;
       }
 
       template <typename U, typename... UTypes>
@@ -343,7 +435,7 @@ namespace doge {
          (ranges::StrictTotallyOrderedWith<Ts, UTypes> && ...)
       friend constexpr bool operator<(std_layout_tuple const& a, std_layout_tuple<UTypes...> const& b) noexcept
       {
-         return ((bool)(a.x_ < b.x_) || not((bool)(b.x_ < a.x_))) && a.rest_ < b.rest_;
+         return a.data_ < b.data_;
       }
 
       template <typename U, typename... UTypes>
@@ -381,55 +473,54 @@ namespace doge {
          x.swap(y);
       }
    private:
-      T x_{};
-      std_layout_tuple<Ts...> rest_;
+      tuple_data<T, Ts...> data_;
 
       template <int I>
-      constexpr tuple_element_t<I, std_layout_tuple>& get() & noexcept
+      constexpr tuple_element_t<I, std_layout_tuple>& get_helper() & noexcept
       {
-         return get_impl<I>(*this);
-      }
-
-      template <int I>
-      constexpr tuple_element_t<I, std_layout_tuple> const& get() const& noexcept
-      {
-         return get_impl<I>(*this);
+         return get_impl<I>(data_);
       }
 
       template <int I>
-      constexpr tuple_element_t<I, std_layout_tuple>&& get() && noexcept
+      constexpr tuple_element_t<I, std_layout_tuple> const& get_helper() const& noexcept
       {
-         return get_impl<I>(*this);
+         return get_impl<I>(data_);
       }
 
       template <int I>
-      constexpr tuple_element_t<I, std_layout_tuple> const&& get() const&& noexcept
+      constexpr tuple_element_t<I, std_layout_tuple>&& get_helper() && noexcept
       {
-         return get_impl<I>(*this);
+         return get_impl<I>(data_);
+      }
+
+      template <int I>
+      constexpr tuple_element_t<I, std_layout_tuple> const&& get_helper() const&& noexcept
+      {
+         return get_impl<I>(data_);
       }
 
       template <typename U>
-      constexpr U& get() & noexcept
+      constexpr U& get_helper() & noexcept
       {
-         return get_impl<U>(*this);
+         return get_impl<U>(data_);
       }
 
       template <typename U>
-      constexpr U const& get() const& noexcept
+      constexpr U const& get_helper() const& noexcept
       {
-         return get_impl<U>(*this);
+         return get_impl<U>(data_);
       }
 
       template <typename U>
-      constexpr U&& get() && noexcept
+      constexpr U&& get_helper() && noexcept
       {
-         return get_impl<U>(*this);
+         return get_impl<U>(data_);
       }
 
       template <typename U>
-      constexpr U const&& get() const&& noexcept
+      constexpr U const&& get_helper() const&& noexcept
       {
-         return get_impl<U>(*this);
+         return get_impl<U>(data_);
       }
 
       template <int I, typename U>
@@ -443,14 +534,14 @@ namespace doge {
          }
       }
 
-      template <typename U, typename Tuple>
-      static constexpr U&& get_impl(Tuple&& t) noexcept
+      template <typename U, typename Data>
+      static constexpr U&& get_impl(Data&& data) noexcept
       {
-         if constexpr (std::is_same_v<T, U>) {
-            return t.x_;
+         if constexpr (std::is_same_v<decltype(data.x_), U>) {
+            return data.x_;
          }
          else {
-            return get_impl<U>(t.rest_);
+            return get_impl<U>(data.rest_);
          }
       }
    };
@@ -461,45 +552,10 @@ namespace doge {
       return std_layout_tuple<>{};
    }
 
-   template <typename T>
-   constexpr T unwrap(T&& t) noexcept
-   {
-      return t;
-   }
-
-   template <typename T>
-   constexpr T& unwrap(std::reference_wrapper<T> const r)
-   {
-      return r.get();
-   }
-
-   template <typename T>
-   struct reference_unwrapper {
-      using type = T;
-   };
-
-   template <typename T>
-   using reference_unwrapper_t = typename reference_unwrapper<T>::type;
-
-   template <typename T>
-   struct reference_unwrapper<T&> {
-      using type = reference_unwrapper_t<T>;
-   };
-
-   template <typename T>
-   struct reference_unwrapper<T&&> {
-      using type = reference_unwrapper_t<T>;
-   };
-
-   template <typename T>
-   struct reference_unwrapper<std::reference_wrapper<T>> {
-      using type = T&;
-   };
-
    template <typename T, typename... Ts>
    constexpr auto make_tuple(T&& t, Ts&&... ts)
    {
-      return std_layout_tuple<reference_unwrapper_t<T>, reference_unwrapper_t<Ts>...>{unwrap(t), std::forward<Ts>(ts)...};
+      return std_layout_tuple<std::decay_t<T>, std::decay_t<Ts>...>{t, std::forward<Ts>(ts)...};
    }
 
    template <typename... TTypes>
@@ -610,10 +666,21 @@ namespace doge {
       using type = typename tuple_element_helper<I, Types...>::type;
    };
 
-   // static_assert(std::is_standard_layout_v<std_layout_tuple<int, float>>);
-   // static_assert(std::is_same_v<tuple_element_t<0, std_layout_tuple<int, float>>, int>);
-   // static_assert(std::is_same_v<tuple_element_t<1, std_layout_tuple<int, float>>, float>);
-   // static_assert(tuple_size_v<std_layout_tuple<int, float>> == 2);
+   static_assert(std::is_standard_layout_v<std_layout_tuple<int, float>>);
+   static_assert(std::is_same_v<tuple_element_t<0, std_layout_tuple<int, float>>, int>);
+   static_assert(std::is_same_v<tuple_element_t<1, std_layout_tuple<int, float>>, float>);
+   static_assert(tuple_size_v<std_layout_tuple<int, float>> == 2);
+   static_assert(sizeof(std_layout_tuple<int>) == sizeof(int));
 } // namespace doge
+
+namespace std {
+   template <typename... Ts>
+   struct tuple_size<::doge::std_layout_tuple<Ts...>>
+      : ::doge::tuple_size<::doge::std_layout_tuple<Ts...>> {};
+
+   template <std::size_t I, typename... Ts>
+   struct tuple_element<I, ::doge::std_layout_tuple<Ts...>>
+      : ::doge::tuple_element<I, ::doge::std_layout_tuple<Ts...>> {};
+}
 
 #endif // DOGE_UTILITY_STD_LAYOUT_TUPLE_HPP
