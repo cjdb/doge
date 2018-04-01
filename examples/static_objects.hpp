@@ -4,6 +4,7 @@
 #include "doge/gl/shader_binary.hpp"
 #include "doge/gl/texture.hpp"
 #include "doge/gl/uniform.hpp"
+#include "doge/utility/std_layout_tuple.hpp"
 #include "experimental/ranges/concepts"
 #include "gl/gl_core.hpp"
 #include <glm/vec3.hpp>
@@ -35,12 +36,12 @@ inline Regular binary_triangles = std::make_shared<std::vector<GLfloat>>(std::ve
    -1.0f, -0.5f, 0.0f
 });
 
-inline Regular coloured_triangle = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
-   // vertex             // colour
-    0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,
-   -0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,
-    0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f
-});
+inline Regular coloured_triangle = std::vector{
+                                      // vertex                 // colour
+   doge::std_layout_tuple<doge::vec3, doge::vec3>{doge::vec3{ 0.5f, -0.5f, 0.0f}, doge::vec3{1.0f, 0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3>{doge::vec3{-0.5f, -0.5f, 0.0f}, doge::vec3{0.0f, 1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3>{doge::vec3{ 0.0f,  0.5f, 0.0f}, doge::vec3{0.0f, 0.0f, 1.0f}}
+};
 
 inline Regular coloured_rectangle = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
    // positions         // colours         // texture coords

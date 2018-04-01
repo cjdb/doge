@@ -34,7 +34,8 @@ int main()
       std::make_pair(doge::shader_source::vertex, "attributes.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "attributes.frag.glsl")}};
 
-   auto v = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, coloured_triangle, 6, {3, 3}};
+   gl::UseProgram(static_cast<GLuint>(program));
+   auto v = doge::vertex_array<doge::basic_buffer_type::array, doge::vec3, doge::vec3>{{ranges::data(coloured_triangle), gsl::narrow_cast<long long>(ranges::size(coloured_triangle))}};
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -43,9 +44,7 @@ int main()
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
       program.use([&v]{
-         v.bind([&v]{
-            v.draw(doge::vertex::triangles, 0, 3);
-         });
+         v.bind([]{});
       });
    });
 }
