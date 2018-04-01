@@ -1,0 +1,1 @@
+add_doge_test(doge.meta partial_sum)
