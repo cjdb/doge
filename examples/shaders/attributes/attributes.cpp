@@ -49,8 +49,7 @@ int main()
       std::make_pair(doge::shader_source::vertex, "attributes.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "attributes.frag.glsl")}};
 
-   auto v = doge::vertex_array_buffer<doge::vec3, doge::vec3>{{ranges::data(coloured_triangle),
-      gsl::narrow_cast<long long>(ranges::size(coloured_triangle))}};
+   auto v = doge::make_vertex_array_buffer(coloured_triangle);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });

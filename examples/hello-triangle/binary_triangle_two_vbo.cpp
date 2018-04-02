@@ -38,7 +38,8 @@ int main()
    };
 
    auto vbo = []{
-      auto result = std::vector<doge::vertex_array_buffer<doge::vec3>>{};
+      auto result = std::vector<doge::vertex_array_buffer<doge::basic_buffer_usage::static_draw,
+         doge::vec3>>{};
       result.emplace_back(triangle[0]);
       result.emplace_back(triangle[1]);
       return result;

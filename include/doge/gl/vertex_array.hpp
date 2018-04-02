@@ -107,22 +107,26 @@ namespace doge {
       }
    };
 
-   using array_buffer = basic_buffer<basic_buffer_type::array, basic_buffer_usage::static_draw>;
-   using element_array_buffer = basic_buffer<basic_buffer_type::element_array,
-      basic_buffer_usage::static_draw>;
-   using uniform_buffer = basic_buffer<basic_buffer_type::uniform, basic_buffer_usage::static_draw>;
+   template <basic_buffer_usage Usage>
+   using array_buffer = basic_buffer<basic_buffer_type::array, Usage>;
 
-   array_buffer make_array_buffer() noexcept
-   {
-      return array_buffer{gl::GenBuffers, gl::DeleteBuffers};
-   }
+   template <basic_buffer_usage Usage>
+   using element_array_buffer = basic_buffer<basic_buffer_type::element_array, Usage>;
 
-   element_array_buffer make_element_array_buffer() noexcept
-   {
-      return element_array_buffer{gl::GenBuffers, gl::DeleteBuffers};
-   }
+   template <basic_buffer_usage Usage>
+   using uniform_buffer = basic_buffer<basic_buffer_type::uniform, Usage>;
 
-   template <typename... Ts>
+   // array_buffer make_array_buffer() noexcept
+   // {
+   //    return array_buffer{gl::GenBuffers, gl::DeleteBuffers};
+   // }
+
+   // element_array_buffer make_element_array_buffer() noexcept
+   // {
+   //    return element_array_buffer{gl::GenBuffers, gl::DeleteBuffers};
+   // }
+
+   template <basic_buffer_usage Usage, typename... Ts>
    requires
       (StandardLayout<Ts> && ...) &&
       ((sizeof(Ts) / sizeof(underlying_type_t<Ts>) <= 4) && ...)
@@ -179,7 +183,7 @@ namespace doge {
       }
    private:
       GLsizei count_ = 0;
-      array_buffer vbo_ = array_buffer{gl::GenBuffers, gl::DeleteBuffers};
+      array_buffer<Usage> vbo_ = array_buffer<Usage>{gl::GenBuffers, gl::DeleteBuffers};
       std::experimental::unique_resource<GLuint, std::function<void(GLuint)>> vao_ =
          ::doge::allocate_gl_resource(gl::GenVertexArrays, gl::DeleteVertexArrays);
 
@@ -197,23 +201,41 @@ namespace doge {
       }
    };
 
-   template <template <typename...> typename Container, typename... Ts, typename A>
-   vertex_array_buffer(Container<std_layout_tuple<Ts...>, A> const&) -> vertex_array_buffer<Ts...>;
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw, typename... Ts>
+   auto make_vertex_array_buffer(gsl::span<std_layout_tuple<Ts...> const> const data) noexcept
+   {
+      return vertex_array_buffer<Usage, Ts...>{data};
+   }
 
-   template <template <typename, std::size_t> typename Container, std::size_t N, typename... Ts>
-   vertex_array_buffer(Container<std_layout_tuple<Ts...>, N> const&) -> vertex_array_buffer<Ts...>;
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename> typename Container, typename... Ts>
+   requires
+      ranges::ext::ContiguousRange<Container<std_layout_tuple<Ts...>>>
+   auto make_vertex_array_buffer(Container<std_layout_tuple<Ts...>> const& data) noexcept
+   {
+      return vertex_array_buffer<Usage, Ts...>{data};
+   }
 
-   template <typename... Ts>
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename, std::size_t> typename Container, typename... Ts, std::size_t N>
+   requires
+      ranges::ext::ContiguousRange<Container<std_layout_tuple<Ts...>, N>>
+   auto make_vertex_array_buffer(Container<std_layout_tuple<Ts...>, N> const& data) noexcept
+   {
+      return vertex_array_buffer<Usage, Ts...>{data};
+   }
+
+   template <basic_buffer_usage Usage, typename... Ts>
    requires
       (StandardLayout<Ts> && ...) &&
       ((sizeof(Ts) / sizeof(underlying_type_t<Ts>) <= 4) && ...)
-   class vertex_element_buffer : vertex_array_buffer<Ts...> {
+   class vertex_element_buffer : vertex_array_buffer<Usage, Ts...> {
    public:
-      using vertex_array_buffer<Ts...>::bind;
+      using vertex_array_buffer<Usage, Ts...>::bind;
 
       explicit vertex_element_buffer(gsl::span<std_layout_tuple<Ts...> const> const data,
          gsl::span<GLuint const> const elements) noexcept
-         : vertex_array_buffer<Ts...>{data}
+         : vertex_array_buffer<Usage, Ts...>{data}
       {
          write(elements);
       }
@@ -235,7 +257,7 @@ namespace doge {
          });
       }
    private:
-      element_array_buffer ebo_ = element_array_buffer{gl::GenBuffers, gl::DeleteBuffers};
+      element_array_buffer<Usage> ebo_ = element_array_buffer<Usage>{gl::GenBuffers, gl::DeleteBuffers};
 
       void write(gsl::span<GLuint const> const elements) noexcept
       {
@@ -246,9 +268,30 @@ namespace doge {
       }
    };
 
-   template <template <typename> typename Container1, typename Container2, typename... Ts>
-   vertex_element_buffer(Container1<std_layout_tuple<Ts...>> const&,
-      Container2 const&) -> vertex_element_buffer<Ts...>;
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw, typename... Ts>
+   auto make_vertex_element_buffer(gsl::span<std_layout_tuple<Ts...> const> const data,
+      gsl::span<GLuint const> const elements) noexcept
+   {
+      return vertex_element_buffer<Usage, Ts...>{data, elements};
+   }
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename> typename Container, typename... Ts>
+   auto make_vertex_element_buffer(Container<std_layout_tuple<Ts...>> const& data,
+      gsl::span<GLuint const> const elements) noexcept
+   {
+      return vertex_element_buffer<Usage, Ts...>{data, elements};
+   }
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename, std::size_t> typename Container, typename... Ts, std::size_t N>
+   requires
+      ranges::ext::ContiguousRange<Container<std_layout_tuple<Ts...>, N>>
+   auto make_vertex_element_buffer(Container<std_layout_tuple<Ts...>, N> const& data,
+      gsl::span<GLuint const> const elements) noexcept
+   {
+      return vertex_element_buffer<Usage, Ts...>{data, elements};
+   }
 } // namespace doge
 
 #endif // DOGE_GL_VERTEX_ARRAY_HPP

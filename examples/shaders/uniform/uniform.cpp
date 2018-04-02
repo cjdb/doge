@@ -33,8 +33,7 @@ int main()
    auto program = doge::shader_binary{{
       std::make_pair(doge::shader_source::vertex, "uniform.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "uniform.frag.glsl")}};
-   auto vbo = doge::vertex_array_buffer<doge::vec3>{{ranges::data(triangle[0]),
-      gsl::narrow_cast<long long>(ranges::size(triangle[0]))}};
+   auto vbo = doge::make_vertex_array_buffer(triangle[0]);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });

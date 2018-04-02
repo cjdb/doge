@@ -66,7 +66,8 @@ namespace demo {
          return program_;
       }
    private:
-      doge::vertex_array_buffer<doge::vec3, doge::vec3, doge::vec2> vertices_;
+      doge::vertex_array_buffer<doge::basic_buffer_usage::static_draw, doge::vec3, doge::vec3,
+         doge::vec2> vertices_;
       doge::shader_binary program_;
       doge::texture2d diffuse_map_;
       doge::texture2d specular_map_;

@@ -35,7 +35,7 @@ int main()
    auto tex = make_awesomeface(program);
 
    auto elements = std::vector<GLuint>{0, 1, 3, 1, 2, 3};
-   auto vbo = doge::vertex_element_buffer{coloured_rectangle, elements};
+   auto vbo = doge::make_vertex_element_buffer(coloured_rectangle, elements);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });

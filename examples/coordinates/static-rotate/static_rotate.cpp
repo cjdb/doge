@@ -40,7 +40,7 @@ int main()
       std::make_pair(doge::shader_source::fragment, "coordinates.example.frag.glsl")}};
 
    auto tex = make_awesomeface(program);
-   auto vbo = doge::vertex_array_buffer{textured_cubes};
+   auto vbo = doge::make_vertex_array_buffer(textured_cubes);
 
    doge::uniform(program, "view", false, glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -3.0f}));
    doge::uniform(program, "projection", false, glm::perspective(glm::radians(45.0f),

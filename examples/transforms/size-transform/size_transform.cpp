@@ -40,7 +40,8 @@ int main()
 
    auto tex = make_awesomeface(program);
    auto vbo = []{
-      auto result = std::vector<doge::vertex_element_buffer<doge::vec3, doge::vec2>>{};
+      auto result = std::vector<doge::vertex_element_buffer<doge::basic_buffer_usage::static_draw,
+         doge::vec3, doge::vec2>>{};
       auto elements = std::vector<GLuint>{0, 1, 3, 1, 2, 3};
       result.emplace_back(rectangle, elements);
       result.emplace_back(rectangle, gsl::span<GLuint>{elements});

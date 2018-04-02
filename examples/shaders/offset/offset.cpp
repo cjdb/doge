@@ -35,8 +35,7 @@ int main()
    auto program = doge::shader_binary{{
       std::make_pair(doge::shader_source::vertex, "offset.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "offset.frag.glsl")}};
-   auto v = doge::vertex_array_buffer<doge::vec3, doge::vec3>{{ranges::data(coloured_triangle),
-      gsl::narrow_cast<long long>(ranges::size(coloured_triangle))}};
+   auto v = doge::make_vertex_array_buffer(coloured_triangle);
 
    program.use([&program]{ doge::uniform(program, "offset", 0.5f); });
 

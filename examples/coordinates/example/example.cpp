@@ -54,7 +54,7 @@ int main()
 
    auto tex = make_awesomeface(program);
 
-   auto vbo = doge::vertex_array_buffer{textured_cubes};
+   auto vbo = doge::make_vertex_array_buffer(textured_cubes);
 
    doge::uniform(program, "projection", false, glm::perspective(glm::radians(45.0f),
       engine.screen().aspect_ratio(), 0.1f, 100.0f));

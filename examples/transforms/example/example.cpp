@@ -41,7 +41,7 @@ int main()
    auto tex = make_awesomeface(program);
 
    auto elements = std::vector<GLuint>{0, 1, 3, 1, 2, 3};
-   auto vbo = doge::vertex_element_buffer{rectangle, elements};
+   auto vbo = doge::make_vertex_element_buffer(rectangle, elements);
 
    auto transform = doge::uniform(program, "transform", false, glm::mat4{1.0f});
 
