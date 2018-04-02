@@ -13,14 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef DOGE_GL_VERTEX_HPP
-#define DOGE_GL_VERTEX_HPP
+#ifndef DOGE_GL_VERTEX_ARRAY_HPP
+#define DOGE_GL_VERTEX_ARRAY_HPP
 
 #include "doge/meta/clear.hpp"
 #include "doge/meta/partial_sum.hpp"
 #include "doge/meta/rotate.hpp"
 #include "doge/utility/std_layout_tuple.hpp"
 #include "doge/utility/type_traits.hpp"
+#include <experimental/ranges/concepts>
+#include "gl/gl_core.hpp"
+#include <gsl/gsl>
+#include <functional>
 
 #pragma GCC diagnostic push 
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -247,4 +251,4 @@ namespace doge {
       Container2 const&) -> vertex_element_buffer<Ts...>;
 } // namespace doge
 
-#endif // DOGE_GL_VERTEX_HPP
+#endif // DOGE_GL_VERTEX_ARRAY_HPP
