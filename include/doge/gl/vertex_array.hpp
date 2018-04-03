@@ -16,6 +16,8 @@
 #ifndef DOGE_GL_VERTEX_ARRAY_HPP
 #define DOGE_GL_VERTEX_ARRAY_HPP
 
+#include "doge/gl/buffer.hpp"
+#include "doge/gl/memory.hpp"
 #include "doge/meta/clear.hpp"
 #include "doge/meta/partial_sum.hpp"
 #include "doge/meta/rotate.hpp"
@@ -32,100 +34,6 @@
 #pragma GCC diagnostic pop
 
 namespace doge {
-   auto allocate_gl_resource(void(* allocator)(GLsizei, GLuint*), 
-                             void(* deleter)  (GLsizei, GLuint const*)) noexcept
-   {
-      ranges::UnsignedIntegral result = GLuint{};
-      ranges::invoke(allocator, 1, &result);
-      return std::experimental::unique_resource<GLuint, std::function<void(GLuint)>>(result,
-         [deleter]([[maybe_unused]] auto const i) mutable noexcept { 
-            ranges::invoke(deleter, GLsizei{1}, &i);
-         });
-   }
-
-   enum class basic_buffer_type {
-      invalid,
-      array = gl::ARRAY_BUFFER,
-      element_array = gl::ELEMENT_ARRAY_BUFFER,
-      uniform = gl::UNIFORM_BUFFER,
-   };
-
-   enum class basic_buffer_usage {
-      invalid,
-      stream_draw = gl::STREAM_DRAW,
-      stream_read = gl::STREAM_READ,
-      stream_copy = gl::STREAM_COPY,
-      static_draw = gl::STATIC_DRAW,
-      static_read = gl::STATIC_READ,
-      static_copy = gl::STATIC_COPY,
-      dynamic_draw = gl::DYNAMIC_DRAW,
-      dynamic_read = gl::DYNAMIC_READ,
-      dynamic_copy = gl::DYNAMIC_COPY
-   };
-
-   template <basic_buffer_type BufferType, basic_buffer_usage BufferUsage>
-   class basic_buffer {
-   public:
-      using create_t = void(*)(GLsizei, GLuint*);
-      using deleter_t = void(*)(GLsizei, GLuint const*);
-
-      explicit basic_buffer(create_t create, deleter_t deleter) noexcept
-         : buffer_{allocate_gl_resource(create, deleter)}
-      {}
-
-      template <typename... Ts>
-      void write(gsl::span<std_layout_tuple<Ts...> const> const data) noexcept
-      {
-         write_impl<(sizeof(Ts) + ...)>(data);
-      }
-
-      void write(gsl::span<GLuint const> const elements) noexcept
-      requires
-         BufferType == basic_buffer_type::element_array
-      {
-         write_impl<sizeof(GLuint)>(elements);
-      }
-
-      GLuint get() const noexcept
-      {
-         return buffer_.get();
-      }
-
-      explicit operator GLuint() const noexcept
-      {
-         return get();
-      }
-   private:
-      std::experimental::unique_resource<GLuint, std::function<void(GLuint)>> buffer_;
-
-      template <std::size_t Size, typename T>
-      void write_impl(gsl::span<T const> const data) noexcept
-      {
-         gl::BindBuffer(static_cast<GLuint>(BufferType), buffer_.get());
-         gl::BufferData(static_cast<GLuint>(BufferType), ranges::size(data) * Size,
-            ranges::data(data), static_cast<GLuint>(BufferUsage));
-      }
-   };
-
-   template <basic_buffer_usage Usage>
-   using array_buffer = basic_buffer<basic_buffer_type::array, Usage>;
-
-   template <basic_buffer_usage Usage>
-   using element_array_buffer = basic_buffer<basic_buffer_type::element_array, Usage>;
-
-   template <basic_buffer_usage Usage>
-   using uniform_buffer = basic_buffer<basic_buffer_type::uniform, Usage>;
-
-   // array_buffer make_array_buffer() noexcept
-   // {
-   //    return array_buffer{gl::GenBuffers, gl::DeleteBuffers};
-   // }
-
-   // element_array_buffer make_element_array_buffer() noexcept
-   // {
-   //    return element_array_buffer{gl::GenBuffers, gl::DeleteBuffers};
-   // }
-
    template <basic_buffer_usage Usage, typename... Ts>
    requires
       (StandardLayout<Ts> && ...) &&
