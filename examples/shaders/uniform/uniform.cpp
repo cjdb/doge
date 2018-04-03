@@ -16,7 +16,6 @@
 #include "../../static_objects.hpp"
 #include <gl/gl_core.hpp>
 #include <doge/engine.hpp>
-#include <doge/gl/buffer_interpreter.hpp>
 #include <doge/gl/vertex_array.hpp>
 #include <doge/gl/shader_binary.hpp>
 #include <doge/gl/shader_source.hpp>
