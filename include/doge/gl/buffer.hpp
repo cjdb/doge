@@ -28,6 +28,9 @@
 #pragma GCC diagnostic pop
 
 namespace doge {
+   /// @brief Determines the type of buffer.
+   /// @note basic_buffer_type::invalid is for internal use only.
+   ///
    enum class basic_buffer_type {
       invalid,
       array = gl::ARRAY_BUFFER,
@@ -35,6 +38,9 @@ namespace doge {
       uniform = gl::UNIFORM_BUFFER,
    };
 
+   /// @brief Determines how the buffer will be typically used.
+   /// @note basic_buffer_usage::invalid is for internal use only.
+   ///
    enum class basic_buffer_usage {
       invalid,
       stream_draw = gl::STREAM_DRAW,
@@ -48,68 +54,122 @@ namespace doge {
       dynamic_copy = gl::DYNAMIC_COPY
    };
 
-   template <basic_buffer_type BufferType, basic_buffer_usage BufferUsage>
+   /// @brief Determines whether the buffer will be laid out as an array of structures or a
+   /// structure of arrays.
+   /// @note basic_buffer_layout::invalid is for internal use only.
+   ///
+   enum class basic_buffer_layout {
+      invalid,
+      array_of_structures,
+      structure_of_arrays
+   };
+
+   /// @brief 
+   /// @tparam Resource Determines the operations that the 
+   /// @tparam T
+   /// @tparam Usage
+   /// @tparam Layout
+   /// @tparam Types...
+   ///
+   template <resource_type Resource, basic_buffer_type T, basic_buffer_usage Usage,
+      basic_buffer_layout Layout = basic_buffer_layout::array_of_structures, typename... Types>
+   requires
+      (StandardLayout<Types> && ...)
    class basic_buffer {
    public:
-      using create_t = void(*)(GLsizei, GLuint*);
-      using deleter_t = void(*)(GLsizei, GLuint const*);
-
-      explicit basic_buffer(create_t create, deleter_t deleter) noexcept
-         : buffer_{allocate_gl_resource(create, deleter)}
-      {}
-
-      template <typename... Ts>
-      void write(gsl::span<std_layout_tuple<Ts...> const> const data) noexcept
+      /// @brief Writes data to the buffer.
+      ///
+      /// TODO: add more
+      /// @tparam UTypes... 
+      /// @param data
+      /// @note Only participates in overload resolution when sizeof...(Types) == sizeof...(UTypes),
+      ///    Layout == basic_buffer_layout::array_of_structures, and for each [T, U] in
+      ///    (Types, UTypes), T is constructible from U.
+      ///
+      template <typename... UTypes>
+      requires
+         sizeof...(Types) == sizeof...(UTypes) &&
+         Layout == basic_buffer_layout::array_of_structures
+      void write(gsl::span<std_layout_tuple<UTypes...> const> const data) noexcept
       {
-         write_impl<(sizeof(Ts) + ...)>(data);
+         static_assert((ranges::Constructible<Types, UTypes> && ...));
+         write_impl<(sizeof(UTypes) + ...)>(data);
       }
 
+      /// @brief Writes data to the buffer.
+      /// @tparam UTypes...
+      /// @param utypes...
+      /// @note Only participates in overload resolution if sizeof...(Types) == sizeof...(UTypes),
+      ///    Layout == basic_buffer_layout::structure_of_arrays, for each U in UTypes is a
+      ///    contiguous range and for each T in Types, T is constructible from U.
+      ///
+      template <typename... UTypes>
+      requires
+         sizeof...(Types) == sizeof...(UTypes) &&
+         Layout == basic_buffer_layout::structure_of_arrays &&
+         (ranges::ext::ContiguousRange<UTypes> && ...)
+      void write(UTypes&&... utypes) noexcept
+      {
+         static_assert((ranges::Constructible<Types, UTypes> && ...));
+         write_impl(std::forward<UTypes>(utypes)..., std::index_sequence_for<UTypes...>{});
+      }
+
+      /// @brief
+      /// @param
       void write(gsl::span<GLuint const> const elements) noexcept
       requires
-         BufferType == basic_buffer_type::element_array
+         T == basic_buffer_type::element_array
       {
          write_impl<sizeof(GLuint)>(elements);
       }
 
-      GLuint get() const noexcept
+      GLuint operator[](int const i) const noexcept
+      {
+         Expects(i >= 0);
+         return buffer_[i];
+      }
+
+      ranges::RandomAccessRange const& get() const noexcept
       {
          return buffer_.get();
       }
-
-      explicit operator GLuint() const noexcept
-      {
-         return get();
-      }
    private:
-      std::experimental::unique_resource<GLuint, std::function<void(GLuint)>> buffer_;
+      gpu_resource<Resource,
+         Layout == basic_buffer_layout::array_of_structures ? 1 : sizeof...(Types)> buffer_;
 
-      template <std::size_t Size, typename T>
-      void write_impl(gsl::span<T const> const data) noexcept
+      template <std::size_t Size, typename U>
+      void write_impl(gsl::span<U const> const data) noexcept
       {
-         gl::BindBuffer(static_cast<GLuint>(BufferType), buffer_.get());
-         gl::BufferData(static_cast<GLuint>(BufferType), ranges::size(data) * Size,
-            ranges::data(data), static_cast<GLuint>(BufferUsage));
+         constexpr ranges::UnsignedIntegral type = static_cast<GLuint>(T);
+         gl::BindBuffer(type, buffer_[0]);
+         gl::BufferData(type, ranges::size(data) * Size, ranges::data(data), static_cast<GLuint>(Usage));
+      }
+
+      template <typename... UTypes, std::size_t... IndexSequence>
+      requires
+         Layout == basic_buffer_layout::structure_of_arrays
+      void write(UTypes&&... utypes, std::index_sequence<IndexSequence...>)
+      {
+         static_assert((ranges::ext::ContiguousRange<UTypes> && ...));
+         static_asserT((ranges::Constructible<Types, UTypes> && ...));
+         constexpr ranges::UnsignedIntegral type = static_cast<GLuint>(T);
+         ((gl::BindBuffer(type, buffer_[IndexSequence]),
+           gl::BufferData(type, ranges::size(utypes) * sizeof(ranges::value_type_t<std::decay_t<UTypes>>),
+              ranges::data(utypes), static_cast<GLuint>(Usage))), ...);
       }
    };
 
-   template <basic_buffer_usage Usage>
-   using array_buffer = basic_buffer<basic_buffer_type::array, Usage>;
+   template <basic_buffer_usage Usage, typename... Types>
+   using array_buffer = basic_buffer<resource_type::buffer, basic_buffer_type::array, Usage,
+      basic_buffer_layout::array_of_structures, Types...>;
 
    template <basic_buffer_usage Usage>
-   using element_array_buffer = basic_buffer<basic_buffer_type::element_array, Usage>;
+   using element_array_buffer =
+      basic_buffer<resource_type::buffer, basic_buffer_type::element_array, Usage>;
 
-   template <basic_buffer_usage Usage>
-   using uniform_buffer = basic_buffer<basic_buffer_type::uniform, Usage>;
-
-   // array_buffer make_array_buffer() noexcept
-   // {
-   //    return array_buffer{gl::GenBuffers, gl::DeleteBuffers};
-   // }
-
-   // element_array_buffer make_element_array_buffer() noexcept
-   // {
-   //    return element_array_buffer{gl::GenBuffers, gl::DeleteBuffers};
-   // }
+   template <basic_buffer_usage Usage, typename... Types>
+   using uniform_buffer = basic_buffer<resource_type::buffer, basic_buffer_type::uniform, Usage,
+      basic_buffer_layout::array_of_structures, Types...>;
 } // namespace doge
 
 #endif // DOGE_GL_VERTEX_BUFFER_HPP

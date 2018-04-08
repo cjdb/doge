@@ -53,7 +53,7 @@ namespace doge {
       template <ranges::Invocable F>
       void bind(F const& f) const noexcept(noexcept(std::is_nothrow_invocable_v<F>))
       {
-         gl::BindVertexArray(vao_.get());
+         gl::BindVertexArray(vao_[0]);
          ranges::invoke(f);
          gl::BindVertexArray(0);
       }
@@ -81,8 +81,8 @@ namespace doge {
       void write(gsl::span<std_layout_tuple<Ts...> const> const data, F const& f) noexcept(noexcept(
          std::is_nothrow_invocable_v<F>))
       {
+         vbo_.write(data);
          bind([this, data, f]{
-            vbo_.write(data);
             count_ = ranges::size(data);
             f();
             vertex_attrib_pointer(std::index_sequence_for<Ts...>{},
@@ -91,9 +91,8 @@ namespace doge {
       }
    private:
       GLsizei count_ = 0;
-      array_buffer<Usage> vbo_ = array_buffer<Usage>{gl::GenBuffers, gl::DeleteBuffers};
-      std::experimental::unique_resource<GLuint, std::function<void(GLuint)>> vao_ =
-         ::doge::allocate_gl_resource(gl::GenVertexArrays, gl::DeleteVertexArrays);
+      array_buffer<Usage, Ts...> vbo_;
+      gpu_resource<resource_type::vertex_array> vao_;
 
       template <std::size_t... Index, std::size_t... Offset>
       void vertex_attrib_pointer(std::index_sequence<Index...>, std::index_sequence<Offset...>)
@@ -165,7 +164,7 @@ namespace doge {
          });
       }
    private:
-      element_array_buffer<Usage> ebo_ = element_array_buffer<Usage>{gl::GenBuffers, gl::DeleteBuffers};
+      element_array_buffer<Usage> ebo_;
 
       void write(gsl::span<GLuint const> const elements) noexcept
       {
