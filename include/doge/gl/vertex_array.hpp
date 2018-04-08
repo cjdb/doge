@@ -53,7 +53,7 @@ namespace doge {
       template <ranges::Invocable F>
       void bind(F const& f) const noexcept(noexcept(std::is_nothrow_invocable_v<F>))
       {
-         gl::BindVertexArray(vao_[0]);
+         gl::BindVertexArray(*vao_);
          ranges::invoke(f);
          gl::BindVertexArray(0);
       }
@@ -92,7 +92,7 @@ namespace doge {
    private:
       GLsizei count_ = 0;
       array_buffer<Usage, Ts...> vbo_;
-      gpu_resource<resource_type::vertex_array> vao_;
+      gpu_ptr<resource_type::vertex_array> vao_;
 
       template <std::size_t... Index, std::size_t... Offset>
       void vertex_attrib_pointer(std::index_sequence<Index...>, std::index_sequence<Offset...>)

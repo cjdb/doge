@@ -134,21 +134,21 @@ namespace doge {
          return buffer_.get();
       }
    private:
-      gpu_resource<Resource,
+      gpu_ptr<Resource,
          Layout == basic_buffer_layout::array_of_structures ? 1 : sizeof...(Types)> buffer_;
 
       template <std::size_t Size, typename U>
       void write_impl(gsl::span<U const> const data) noexcept
       {
          constexpr ranges::UnsignedIntegral type = static_cast<GLuint>(T);
-         gl::BindBuffer(type, buffer_[0]);
+         gl::BindBuffer(type, *buffer_);
          gl::BufferData(type, ranges::size(data) * Size, ranges::data(data), static_cast<GLuint>(Usage));
       }
 
       template <typename... UTypes, std::size_t... IndexSequence>
       requires
          Layout == basic_buffer_layout::structure_of_arrays
-      void write(UTypes&&... utypes, std::index_sequence<IndexSequence...>)
+      void write_impl(UTypes&&... utypes, std::index_sequence<IndexSequence...>)
       {
          static_assert((ranges::ext::ContiguousRange<UTypes> && ...));
          static_asserT((ranges::Constructible<Types, UTypes> && ...));
