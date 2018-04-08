@@ -1,4 +1,1 @@
-add_executable(examples.texture.example texture.example.cpp)
-link_core(examples.texture.example)
-
-copy_shaders()
+add_example(texture)

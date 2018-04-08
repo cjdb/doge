@@ -1,4 +1,2 @@
-add_executable(camera.example camera.cpp)
-link_core(camera.example)
+add_example(camera)
 
-copy_shaders()
