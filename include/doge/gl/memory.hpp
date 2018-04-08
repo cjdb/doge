@@ -19,15 +19,24 @@ namespace doge {
    template <resource_type T, int N = 1>
    requires
       N > 0
-   class gpu_resource {
+   class gpu_ptr {
       using unique_resource = std::experimental::unique_resource<std::array<GLuint, N>,
          std::function<void(std::array<GLuint, N> const&)>>;
    public:
       GLuint operator[](int const i) const noexcept
+      requires
+         N > 1
       {
          Expects(i >= 0);
          Expects(i < N);
-         return resource_.get()[i];
+         return get()[i];
+      }
+
+      GLuint operator*() const noexcept
+      requires
+         N == 1
+      {
+         return get()[0];
       }
 
       auto const& get() const noexcept
@@ -36,7 +45,7 @@ namespace doge {
       }
    private:
       unique_resource resource_ = []{
-         auto const [allocator, deleter] = gpu_resource_allocator();
+         auto const [allocator, deleter] = gpu_ptr_allocator();
          ranges::Regular result = std::array<GLuint, N>{};
          allocator(ranges::size(result), ranges::data(result));
 
@@ -46,21 +55,21 @@ namespace doge {
          });
       }();
 
-      static auto gpu_resource_allocator() noexcept
+      static auto gpu_ptr_allocator() noexcept
       requires
          T == resource_type::buffer
       {
          return std::make_pair(gl::GenBuffers, gl::DeleteBuffers);
       }
 
-      static auto gpu_resource_allocator() noexcept
+      static auto gpu_ptr_allocator() noexcept
       requires
          T == resource_type::framebuffer
       {
          return std::make_pair(gl::GenFramebuffers, gl::DeleteFramebuffers);
       }
 
-      static auto gpu_resource_allocator() noexcept
+      static auto gpu_ptr_allocator() noexcept
       requires
          T == resource_type::vertex_array
       {
