@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Christopher Di Bella
+//  Copyright 2018 Christopher Di Bella
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,129 +16,189 @@
 #ifndef DOGE_GL_VERTEX_ARRAY_HPP
 #define DOGE_GL_VERTEX_ARRAY_HPP
 
-#include <cassert>
-#include <doge/gl/buffer_interpreter.hpp>
-#include <doge/utility/reference_count.hpp>
+#include "doge/gl/buffer.hpp"
+#include "doge/gl/memory.hpp"
+#include "doge/meta/clear.hpp"
+#include "doge/meta/partial_sum.hpp"
+#include "doge/meta/rotate.hpp"
+#include "doge/utility/std_layout_tuple.hpp"
+#include "doge/utility/type_traits.hpp"
 #include <experimental/ranges/concepts>
-#include <gl/gl_core.hpp>
+#include "gl/gl_core.hpp"
 #include <gsl/gsl>
-#include <memory>
-#include <optional>
-#include <type_traits>
-#include <variant>
-#include <vector>
+#include <functional>
+
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#include "unique_resource.h"
+#pragma GCC diagnostic pop
 
 namespace doge {
-   namespace ranges = std::experimental::ranges;
-
-   class vertex {
+   template <basic_buffer_usage Usage, typename... Ts>
+   requires
+      (StandardLayout<Ts> && ...) &&
+      ((sizeof(Ts) / sizeof(underlying_type_t<Ts>) <= 4) && ...)
+   class vertex_array_buffer {
    public:
-      vertex(const GLenum target, const GLenum usage,
-         gsl::not_null<std::shared_ptr<std::vector<GLfloat>>> data, const GLint size,
-         const std::vector<GLint>& stride)
-         : data_{std::move(data.get())}
+      explicit vertex_array_buffer(gsl::span<std_layout_tuple<Ts...> const> const data) noexcept
       {
-         Expects(not data_->empty());
-         init(target, usage, size, stride, []{});
+         write(data);
       }
 
-      vertex(const GLenum target, const GLenum usage,
-         gsl::not_null<std::shared_ptr<std::vector<GLfloat>>> data, std::vector<GLint> indices,
-         const GLint size, const std::vector<GLint>& stride)
-         : data_{std::move(data.get())},
-           indices_{std::move(indices)}
+      void write(gsl::span<std_layout_tuple<Ts...> const> const data) noexcept
       {
-         Expects(not data_->empty());
-         Expects(indices_ and not indices_->empty());
-
-         init(target, usage, size, stride, [this, usage]{
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, *ebo_);
-            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, indices_->size() * sizeof(GLint),
-               indices_->data(), usage); });
-      }
-
-      enum draw_type { triangles = gl::TRIANGLES };
-
-      void draw(const draw_type mode) const noexcept
-      {
-         gl::DrawElements(gsl::narrow_cast<GLint>(mode), indices_->size(), gl::UNSIGNED_INT,
-            nullptr);
-      }
-
-      void draw(const draw_type mode, const GLint first, const GLint last) const noexcept
-      {
-         gl::DrawArrays(gsl::narrow_cast<GLint>(mode), first, last);
+         write(data, []{});
       }
 
       template <ranges::Invocable F>
-      void bind(const F& f) const noexcept
+      void bind(F const& f) const noexcept(noexcept(std::is_nothrow_invocable_v<F>))
       {
-         gl::BindVertexArray(vao_);
+         gl::BindVertexArray(*vao_);
          ranges::invoke(f);
+         gl::BindVertexArray(0);
+      }
+
+      template <ranges::Invocable F>
+      void draw(F const& f) const noexcept(noexcept(std::is_nothrow_invocable_v<F>))
+      {
+         bind([this, f]{
+            ranges::invoke(f);
+            gl::DrawArrays(gl::TRIANGLES, 0, count_);
+         });
+      }
+   protected:
+      GLsizei count() const noexcept
+      {
+         return count_;
+      }
+
+      void count(GLsizei const c) noexcept
+      {
+         count_ = c;
+      }
+
+      template <ranges::Invocable F>
+      void write(gsl::span<std_layout_tuple<Ts...> const> const data, F const& f) noexcept(noexcept(
+         std::is_nothrow_invocable_v<F>))
+      {
+         vbo_.write(data);
+         bind([this, data, f]{
+            count_ = ranges::size(data);
+            f();
+            vertex_attrib_pointer(std::index_sequence_for<Ts...>{},
+               meta::clear_t<0, meta::rotate_t<sizeof...(Ts) - 1, meta::partial_sum_t<(sizeof(Ts) / sizeof(underlying_type_t<Ts>))...>>>{});
+          });
       }
    private:
-      GLuint array_size_ = 1;
-      reference_count<GLuint> vao_ = make_reference_count(array_size_, gl::GenVertexArrays,
-         gl::DeleteVertexArrays);
+      GLsizei count_ = 0;
+      array_buffer<Usage, Ts...> vbo_;
+      gpu_ptr<resource_type::vertex_array> vao_;
 
-      GLuint buffer_size_ = 1;
-      reference_count<GLuint> vbo_ = make_reference_count(buffer_size_, gl::GenBuffers,
-         gl::DeleteBuffers);
-
-      std::shared_ptr<std::vector<GLfloat>> data_;
-
-      std::optional<std::vector<GLint>> indices_;
-      std::optional<reference_count<GLuint>> ebo_ = indices_ ?
-         make_reference_count(1, gl::GenBuffers, gl::DeleteBuffers) :
-         std::optional<reference_count<GLuint>>{};
-
-      template <typename F1, typename F2>
-      static reference_count<GLuint> make_reference_count(GLuint size, F1 f1, F2 f2) noexcept
+      template <std::size_t... Index, std::size_t... Offset>
+      void vertex_attrib_pointer(std::index_sequence<Index...>, std::index_sequence<Offset...>)
       {
-         auto result = GLuint{};
-         ranges::invoke(f1, size, &result);
-         return {result, [size, f2 = std::move(f2)](const auto i) noexcept {
-            ranges::invoke(f2, size, i); }};
+         (gl::DisableVertexAttribArray(Index), ...);
+         (gl::VertexAttribPointer(Index,                                            // index
+            sizeof(Ts) / sizeof(underlying_type_t<Ts>),                             // size
+            glsl_type_v<Ts>,                                                        // type
+            false,                                                                  // normalised
+            (sizeof(Ts) + ...),                                                     // stride
+            reinterpret_cast<void const*>(Offset * sizeof(glsl_type_t<Ts>))), ...); // offset
+         (gl::EnableVertexAttribArray(Index), ...);
+      }
+   };
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw, typename... Ts>
+   auto make_vertex_array_buffer(gsl::span<std_layout_tuple<Ts...> const> const data) noexcept
+   {
+      return vertex_array_buffer<Usage, Ts...>{data};
+   }
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename> typename Container, typename... Ts>
+   requires
+      ranges::ext::ContiguousRange<Container<std_layout_tuple<Ts...>>>
+   auto make_vertex_array_buffer(Container<std_layout_tuple<Ts...>> const& data) noexcept
+   {
+      return vertex_array_buffer<Usage, Ts...>{data};
+   }
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename, std::size_t> typename Container, typename... Ts, std::size_t N>
+   requires
+      ranges::ext::ContiguousRange<Container<std_layout_tuple<Ts...>, N>>
+   auto make_vertex_array_buffer(Container<std_layout_tuple<Ts...>, N> const& data) noexcept
+   {
+      return vertex_array_buffer<Usage, Ts...>{data};
+   }
+
+   template <basic_buffer_usage Usage, typename... Ts>
+   requires
+      (StandardLayout<Ts> && ...) &&
+      ((sizeof(Ts) / sizeof(underlying_type_t<Ts>) <= 4) && ...)
+   class vertex_element_buffer : vertex_array_buffer<Usage, Ts...> {
+   public:
+      using vertex_array_buffer<Usage, Ts...>::bind;
+
+      explicit vertex_element_buffer(gsl::span<std_layout_tuple<Ts...> const> const data,
+         gsl::span<GLuint const> const elements) noexcept
+         : vertex_array_buffer<Usage, Ts...>{data}
+      {
+         write(elements);
       }
 
-      void bind_buffer(const GLenum target, const GLenum usage) const noexcept
+      void write(gsl::span<std_layout_tuple<Ts...> const> const data,
+         gsl::span<GLuint> const elements) noexcept
       {
-         gl::BindBuffer(target, vbo_);
-         gl::BufferData(target, data_->size() * sizeof(GLfloat), std::data(*data_), usage);
-      }
-
-      void interpret(const GLint size, const std::vector<GLint>& interpreter) noexcept
-      {
-         using ranges::Integral, ranges::SignedIntegral;
-         Integral offset = GLsizeiptr{};
-         for (Integral i = decltype(interpreter.size()){}; i != interpreter.size(); ++i) {
-            const SignedIntegral index = static_cast<GLint>(i);
-            const SignedIntegral stride = interpreter[i];
-            gl::VertexAttribPointer(index, stride, gl::FLOAT, false, size * sizeof(GLfloat),
-               reinterpret_cast<GLvoid*>(offset * sizeof(GLfloat)));
-            gl::EnableVertexAttribArray(index);
-            offset += stride;
-         }
-      }
-
-      template <ranges::Invocable F>
-      void init(const GLenum target, const GLenum usage, const GLint size,
-         const std::vector<GLint>& stride, const F& ebo)
-      {
-         bind([&, this]{
-            bind_buffer(target, usage);
-            ranges::invoke(ebo);
-            interpret(size, stride);
-            unbind(target);
+         this->write(data, [this, elements]{
+            write(elements);
          });
       }
 
-      static void unbind(const GLenum target) noexcept
+      template <ranges::Invocable F>
+      void draw(F const& f) noexcept(noexcept(std::is_nothrow_invocable_v<F>))
       {
-         gl::BindBuffer(target, 0);
-         gl::BindVertexArray(0);
+         bind([this, f]{
+            ranges::invoke(f);
+            gl::DrawElements(gl::TRIANGLES, this->count(), gl::UNSIGNED_INT, nullptr);
+         });
+      }
+   private:
+      element_array_buffer<Usage> ebo_;
+
+      void write(gsl::span<GLuint const> const elements) noexcept
+      {
+         bind([this, elements]{
+            this->count(ranges::size(elements));
+            ebo_.write(elements);
+         });
       }
    };
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw, typename... Ts>
+   auto make_vertex_element_buffer(gsl::span<std_layout_tuple<Ts...> const> const data,
+      gsl::span<GLuint const> const elements) noexcept
+   {
+      return vertex_element_buffer<Usage, Ts...>{data, elements};
+   }
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename> typename Container, typename... Ts>
+   auto make_vertex_element_buffer(Container<std_layout_tuple<Ts...>> const& data,
+      gsl::span<GLuint const> const elements) noexcept
+   {
+      return vertex_element_buffer<Usage, Ts...>{data, elements};
+   }
+
+   template <basic_buffer_usage Usage = basic_buffer_usage::static_draw,
+      template <typename, std::size_t> typename Container, typename... Ts, std::size_t N>
+   requires
+      ranges::ext::ContiguousRange<Container<std_layout_tuple<Ts...>, N>>
+   auto make_vertex_element_buffer(Container<std_layout_tuple<Ts...>, N> const& data,
+      gsl::span<GLuint const> const elements) noexcept
+   {
+      return vertex_element_buffer<Usage, Ts...>{data, elements};
+   }
 } // namespace doge
 
 #endif // DOGE_GL_VERTEX_ARRAY_HPP

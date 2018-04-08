@@ -15,10 +15,17 @@ cmake_minimum_required(VERSION 3.9)
 
 project(doge C CXX)
 
+include(ExternalProject)
+find_package(Git)
+
 enable_testing()
 include(CTest)
 
 # Compiler flags
+
+# add_library(doge)
+#target_compile_features(doge cxx_std_17)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 ## General C++ flags
 ### Language- and architecture-specific
@@ -41,6 +48,8 @@ endif()
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g0 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -g0 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g3 -DNDEBUG")
+
+
 
 # Linker flags
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
@@ -98,6 +107,7 @@ if (NOT ${DOGE_CATCH2_PATH} EQUAL "")
    include_directories("${DOGE_CATCH2_PATH}/include")
 endif()
 
+include_directories("${CMAKE_BINARY_DIR}/scope_guard/workspace/P0052_scope_exit/src")
 message(STATUS "Catch2 path: ${DOGE_CATCH2_PATH}")
 
 add_subdirectory(source)
@@ -120,6 +130,6 @@ function(link_core object)
 endfunction(link_core)
 
 add_subdirectory(examples)
-add_subdirectory(test)
+#add_subdirectory(test)
 
 install(DIRECTORY $(PROJECT_SOURCE_DIR)/include DESTINATION include)

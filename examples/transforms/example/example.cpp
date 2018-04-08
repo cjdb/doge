@@ -40,8 +40,8 @@ int main()
 
    auto tex = make_awesomeface(program);
 
-   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, rectangle, {0, 1, 3, 1, 2, 3}, 5,
-      {3, 2}};
+   auto elements = std::vector<GLuint>{0, 1, 3, 1, 2, 3};
+   auto vbo = doge::make_vertex_element_buffer(rectangle, elements);
 
    auto transform = doge::uniform(program, "transform", false, glm::mat4{1.0f});
 
@@ -52,15 +52,14 @@ int main()
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
       program.use([&]{
-         for (auto i = decltype(tex.size()){}; i != tex.size(); ++i)
+         for (auto i = decltype(tex.size()){}; i != tex.size(); ++i) {
             tex[i].bind(gl::TEXTURE0 + i);
+         }
 
-         vbo.bind([&transform, &vbo]{
-            transform = glm::mat4(1.0f)
-                      | doge::rotate(doge::as_radians(doge::glfw_time()), {0.0f, 0.0f, 1.0f})
-                      | doge::scale({0.5f, 0.5f, 0.5f});
-            vbo.draw(doge::vertex::triangles);
-         });
+         transform = glm::mat4(1.0f)
+                   | doge::rotate(doge::as_radians(doge::glfw_time()), {0.0f, 0.0f, 1.0f})
+                   | doge::scale({0.5f, 0.5f, 0.5f});
+         vbo.draw([]{});
       });
    });
 }

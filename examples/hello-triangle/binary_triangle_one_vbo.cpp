@@ -31,7 +31,7 @@ int main()
    auto program = doge::shader_binary{{std::make_pair(doge::shader_source::vertex, "vertex.glsl"),
       std::make_pair(doge::shader_source::fragment, "fragment.glsl")}};
 
-   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, binary_triangles, 3, {3}};
+   auto vbo = doge::make_vertex_array_buffer(binary_triangles);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -41,8 +41,8 @@ int main()
 
      program.use([&vbo]{
          vbo.bind([&vbo] {
-            vbo.draw(doge::vertex::triangles, 0, 3);
-            vbo.draw(doge::vertex::triangles, 2, 3);
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            gl::DrawArrays(gl::TRIANGLES, 2, 3);
          });
      });
    });

@@ -13,18 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef DOGE_GL_HPP
-#define DOGE_GL_HPP
+#ifndef DOGE_META_CLEAR_HPP
+#define DOGE_META_CLEAR_HPP
 
-#include "doge/gl/cast.hpp"
-#include "doge/gl/gl_error.hpp"
-#include "doge/gl/shader_binary.hpp"
-#include "doge/gl/shader_source.hpp"
-#include "doge/gl/texture.hpp"
-#include "doge/gl/uniform.hpp"
-#include "doge/gl/vertex_array.hpp"
+#include <utility>
 
-#include "doge/glm/matrix.hpp"
-#include "doge/glm/vec.hpp"
+namespace doge::meta {
+   template <std::size_t Value, typename>
+   struct clear;
 
-#endif // DOGE_GL_HPP
+   template <std::size_t Value, typename T>
+   using clear_t = typename clear<Value, T>::type;
+
+   template <std::size_t Value, std::size_t Old, std::size_t... Rest>
+   struct clear<Value, std::index_sequence<Old, Rest...>> {
+      using type = std::index_sequence<Value, Rest...>;
+   };
+} // namespace doge::meta
+
+#endif // DOGE_META_CLEAR_HPP

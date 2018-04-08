@@ -16,7 +16,6 @@
 #include "../../static_objects.hpp"
 #include <gl/gl_core.hpp>
 #include <doge/engine.hpp>
-#include <doge/gl/buffer_interpreter.hpp>
 #include <doge/gl/vertex_array.hpp>
 #include <doge/gl/shader_binary.hpp>
 #include <doge/gl/shader_source.hpp>
@@ -33,7 +32,7 @@ int main()
    auto program = doge::shader_binary{{
       std::make_pair(doge::shader_source::vertex, "uniform.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "uniform.frag.glsl")}};
-   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, triangle[0], 3, {3}};
+   auto vbo = doge::make_vertex_array_buffer(triangle[0]);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -47,9 +46,7 @@ int main()
          Regular green = (std::sin(time) / 2.0f) + 0.5f;
          doge::uniform(program, "out_colour", glm::vec4{0.0f, green, 0.0f, 1.0f});
 
-         vbo.bind([&vbo]{
-            vbo.draw(doge::vertex::triangles, 0, 3);
-         });
+         vbo.draw([]{});
       });
    });
 }

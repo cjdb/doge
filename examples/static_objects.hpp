@@ -1,9 +1,12 @@
 #ifndef STATIC_OBJECTS_HPP
 #define STATIC_OBJECTS_HPP
 
+#include <array>
 #include "doge/gl/shader_binary.hpp"
 #include "doge/gl/texture.hpp"
 #include "doge/gl/uniform.hpp"
+#include "doge/utility/std_layout_tuple.hpp"
+#include "doge/types.hpp"
 #include "experimental/ranges/concepts"
 #include "gl/gl_core.hpp"
 #include <glm/vec3.hpp>
@@ -15,48 +18,48 @@ namespace ranges = std::experimental::ranges;
 using ranges::Regular;
 
 inline Regular triangle = std::vector{
-   std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
-         0.5f,  0.5f, 0.0f,
-         1.0f, -0.5f, 0.0f,
-         0.0f, -0.5f, 0.0f
-   }),
-   std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
-         0.0f, -0.5f, 0.0f,
-      -1.0f, -0.5f, 0.0f,
-      -0.5f,  0.5f, 0.0f
-   })
+   std::array<doge::std_layout_tuple<doge::vec3>, 3>{{
+      doge::std_layout_tuple<doge::vec3>{doge::vec3{0.5f,  0.5f, 0.0f}},
+      doge::std_layout_tuple<doge::vec3>{doge::vec3{1.0f, -0.5f, 0.0f}},
+      doge::std_layout_tuple<doge::vec3>{doge::vec3{0.0f, -0.5f, 0.0f}}
+   }},
+   std::array<doge::std_layout_tuple<doge::vec3>, 3>{{
+      doge::std_layout_tuple<doge::vec3>{doge::vec3{0.0f, -0.5f, 0.0f}},
+      doge::std_layout_tuple<doge::vec3>{doge::vec3{-1.0f, -0.5f, 0.0f}},
+      doge::std_layout_tuple<doge::vec3>{doge::vec3{-0.5f,  0.5f, 0.0f}}
+   }}
 };
 
-inline Regular binary_triangles = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
-    0.5f,  0.5f, 0.0f,
-    1.0f, -0.5f, 0.0f,
-    0.0f, -0.5f, 0.0f,
-   -0.5f,  0.5f, 0.0f,
-   -1.0f, -0.5f, 0.0f
-});
+inline Regular binary_triangles = std::vector{
+   doge::std_layout_tuple<doge::vec3>{doge::vec3{ 0.5f,  0.5f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3>{doge::vec3{ 1.0f, -0.5f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3>{doge::vec3{ 0.0f, -0.5f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3>{doge::vec3{-0.5f,  0.5f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3>{doge::vec3{-1.0f, -0.5f, 0.0f}}
+};
 
-inline Regular coloured_triangle = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
-   // vertex             // colour
-    0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,
-   -0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,
-    0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f
-});
+inline Regular coloured_triangle = std::vector{
+                                      // vertex                 // colour
+   doge::std_layout_tuple<doge::vec3, doge::vec3>{doge::vec3{ 0.5f, -0.5f, 0.0f}, doge::vec3{1.0f, 0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3>{doge::vec3{-0.5f, -0.5f, 0.0f}, doge::vec3{0.0f, 1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3>{doge::vec3{ 0.0f,  0.5f, 0.0f}, doge::vec3{0.0f, 0.0f, 1.0f}}
+};
 
-inline Regular coloured_rectangle = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
+inline Regular coloured_rectangle = std::vector{
    // positions         // colours         // texture coords
-    0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,  1.0f, 1.0f,   // top right
-    0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,  1.0f, 0.0f,   // bottom right
-   -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,  0.0f, 0.0f,   // bottom left
-   -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,  0.0f, 1.0f    // top left
-});
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}}, // top right
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}}, // bottom right
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}}  // top left
+};
 
-inline Regular rectangle = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
+inline Regular rectangle = std::vector{
    // positions         // texture coords
-    0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-    0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-   -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-   -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left
-});
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f}}, // top right
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{{ 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}}, // bottom right
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}}, // bottom left
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{{-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f}}  // top left
+};
 
 inline Regular cube = std::make_shared<std::vector<GLfloat>>(std::initializer_list<GLfloat>{
    -0.5f, -0.5f, -0.5f,
@@ -102,95 +105,95 @@ inline Regular cube = std::make_shared<std::vector<GLfloat>>(std::initializer_li
    -0.5f,  0.5f, -0.5f,
 });
 
-inline Regular textured_cubes = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
+inline Regular textured_cubes = std::vector{
    // positions         // texture coords
-   -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-    0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-    0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-   -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f, -0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f, -0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f, -0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 0.0f}},
 
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-   -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f,  0.5f}, doge::vec2{0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f,  0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f,  0.5f}, doge::vec2{0.0f, 0.0f}},
 
-   -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-   -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-   -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f, -0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f,  0.5f}, doge::vec2{0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
 
-    0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f, -0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f,  0.5f}, doge::vec2{0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
 
-   -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-    0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f, -0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f, -0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f,  0.5f}, doge::vec2{0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f, -0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
 
-   -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-   -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-   -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-});
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f, -0.5f}, doge::vec2{1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{ 0.5f,  0.5f,  0.5f}, doge::vec2{1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f,  0.5f}, doge::vec2{0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec2>{doge::vec3{-0.5f,  0.5f, -0.5f}, doge::vec2{0.0f, 1.0f}}
+};
 
-inline Regular cube_with_normal = std::make_shared<std::vector<GLfloat>>(std::vector<GLfloat>{
+inline Regular cube_with_normal = std::vector{
     // positions            // normals              // texture coords
-   -0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     0.0f, 0.0f,
-    0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     1.0f, 0.0f,
-    0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     1.0f, 1.0f,
-    0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     1.0f, 1.0f,
-   -0.5f,  0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     0.0f, 1.0f,
-   -0.5f, -0.5f, -0.5f,     0.0f,  0.0f, -1.0f,     0.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {0.0f, 0.0f}},
 
-   -0.5f, -0.5f,  0.5f,     0.0f,  0.0f, 1.0f,      0.0f, 0.0f,
-    0.5f, -0.5f,  0.5f,     0.0f,  0.0f, 1.0f,      1.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f,      1.0f, 1.0f,
-    0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f,      1.0f, 1.0f,
-   -0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f,      0.0f, 1.0f,
-   -0.5f, -0.5f,  0.5f,     0.0f,  0.0f, 1.0f,      0.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f,  0.5f}, {0.0f,  0.0f, 1.0f}, { 0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f,  0.5f}, {0.0f,  0.0f, 1.0f}, { 1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f,  0.5f}, {0.0f,  0.0f, 1.0f}, { 1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f,  0.5f}, {0.0f,  0.0f, 1.0f}, { 1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f,  0.5f}, {0.0f,  0.0f, 1.0f}, { 0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f,  0.5f}, {0.0f,  0.0f, 1.0f}, { 0.0f, 0.0f}},
 
-   -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
-   -0.5f,  0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,     1.0f, 1.0f,
-   -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
-   -0.5f, -0.5f, -0.5f,    -1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
-   -0.5f, -0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,     0.0f, 0.0f,
-   -0.5f,  0.5f,  0.5f,    -1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
 
-    0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
-    0.5f,  0.5f, -0.5f,     1.0f,  0.0f,  0.0f,     1.0f, 1.0f,
-    0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
-    0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f,     0.0f, 1.0f,
-    0.5f, -0.5f,  0.5f,     1.0f,  0.0f,  0.0f,     0.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f,     1.0f, 0.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f,  0.5f}, {1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f, -0.5f}, {1.0f,  0.0f,  0.0f}, {1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f, -0.5f}, {1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f, -0.5f}, {1.0f,  0.0f,  0.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f,  0.5f}, {1.0f,  0.0f,  0.0f}, {0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f,  0.5f}, {1.0f,  0.0f,  0.0f}, {1.0f, 0.0f}},
 
-   -0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,     0.0f, 1.0f,
-    0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,     1.0f, 1.0f,
-    0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,     1.0f, 0.0f,
-    0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,     1.0f, 0.0f,
-   -0.5f, -0.5f,  0.5f,     0.0f, -1.0f,  0.0f,     0.0f, 0.0f,
-   -0.5f, -0.5f, -0.5f,     0.0f, -1.0f,  0.0f,     0.0f, 1.0f,
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f, -0.5f}, {0.0f, -1.0f,  0.0f}, {1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f,  0.5f}, {0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f, -0.5f,  0.5f}, {0.0f, -1.0f,  0.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f,  0.5f}, {0.0f, -1.0f,  0.0f}, {0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f,  0.0f}, {0.0f, 1.0f}},
 
-   -0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,     0.0f, 1.0f,
-    0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,     1.0f, 1.0f,
-    0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,     1.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,     1.0f, 0.0f,
-   -0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f,     0.0f, 0.0f,
-   -0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,     0.0f, 1.0f
-});
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f, -0.5f}, {0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f, -0.5f}, {0.0f,  1.0f,  0.0f}, {1.0f, 1.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f,  0.5f}, {0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{ 0.5f,  0.5f,  0.5f}, {0.0f,  1.0f,  0.0f}, {1.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f,  0.5f}, {0.0f,  1.0f,  0.0f}, {0.0f, 0.0f}},
+   doge::std_layout_tuple<doge::vec3, doge::vec3, doge::vec2>{{-0.5f,  0.5f, -0.5f}, {0.0f,  1.0f,  0.0f}, {0.0f, 1.0f}}
+};
 
 inline Regular cube_positions = std::vector<glm::vec3>{
    glm::vec3( 0.0f,  0.0f,  0.0f),

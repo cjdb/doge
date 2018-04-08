@@ -34,8 +34,8 @@ int main()
 
    auto tex = make_awesomeface(program);
 
-   auto vbo = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, coloured_rectangle,
-      {0, 1, 3, 1, 2, 3}, 8, {3, 3, 2}};
+   auto elements = std::vector<GLuint>{0, 1, 3, 1, 2, 3};
+   auto vbo = doge::make_vertex_element_buffer(coloured_rectangle, elements);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -44,12 +44,11 @@ int main()
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
       program.use([&]{
-         for (auto i = decltype(tex.size()){}; i != tex.size(); ++i)
+         for (auto i = decltype(tex.size()){}; i != tex.size(); ++i) {
             tex[i].bind(gl::TEXTURE0 + i);
+         }
 
-         vbo.bind([&vbo]{
-            vbo.draw(doge::vertex::triangles);
-         });
+         vbo.draw([]{});
       });
    });
 }

@@ -27,13 +27,14 @@ public:
       program_.use([this, &f]{
          ranges::invoke(f, projection_, view_, model_);
          vertices_.bind([this]{
-            vertices_.draw(doge::vertex::triangles, 0, 36);
+            vertices_.draw([]{});
          });
       });
    }
 private:
    doge::shader_binary program_ = doge::make_shader("light_source");
-   doge::vertex vertices_{gl::ARRAY_BUFFER, gl::STATIC_DRAW, cube_with_normal, 8, {3}};
+   doge::vertex_array_buffer<doge::basic_buffer_usage::static_draw, doge::vec3, doge::vec3,
+      doge::vec2> vertices_{cube_with_normal};
    doge::uniform<doge::mat4> projection_{program_, "projection", false, {}};
    doge::uniform<doge::mat4> view_{program_, "view", false, {}};
    doge::uniform<doge::mat4> model_{program_, "model", false, {}};

@@ -32,6 +32,80 @@ namespace doge {
    template <typename T>
    using remove_cv_pointer_t = std::remove_cv_t<std::remove_pointer_t<T>>;
 
+   template <typename T>
+   struct underlying_type {
+      using type = T;
+   };
+
+   template <typename T>
+   requires requires { typename ranges::value_type_t<T>; }
+   struct underlying_type<T> {
+      using type = ranges::value_type_t<T>;
+   };
+
+   template <typename T>
+   using underlying_type_t = typename underlying_type<T>::type;
+
+   template <typename T> struct glsl_type {};
+
+   template <>
+   struct glsl_type<GLbyte> {
+      using type = GLbyte;
+      static constexpr auto value = gl::BYTE;
+   };
+
+   template <>
+   struct glsl_type<GLubyte> {
+      using type = GLubyte;
+      static constexpr auto value = gl::UNSIGNED_BYTE;
+   };
+
+   template <>
+   struct glsl_type<GLshort> {
+      using type = GLshort;
+      static constexpr auto value = gl::SHORT;
+   };
+
+   template <>
+   struct glsl_type<GLushort> {
+      using type = GLushort;
+      static constexpr auto value = gl::UNSIGNED_SHORT;
+   };
+
+   template <>
+   struct glsl_type<GLint> {
+      using type = GLint;
+      static constexpr auto value = gl::INT;
+   };
+
+   template <>
+   struct glsl_type<GLuint> {
+      using type = GLuint;
+      static constexpr auto value = gl::UNSIGNED_INT;
+   };
+
+   template <>
+   struct glsl_type<GLfloat> {
+      using type = GLfloat;
+      static constexpr auto value = gl::FLOAT;
+   };
+
+   template <>
+   struct glsl_type<GLdouble> {
+      using type = GLdouble;
+      static constexpr auto value = gl::DOUBLE;
+   };
+
+   template <typename T> struct glsl_type<glm::tvec2<T>> : glsl_type<T> {};
+   template <typename T> struct glsl_type<glm::tvec3<T>> : glsl_type<T> {};
+   template <typename T> struct glsl_type<glm::tvec4<T>> : glsl_type<T> {};
+
+   template <typename T>
+   inline constexpr auto glsl_type_v = glsl_type<T>::value;
+
+   template <typename T>
+   using glsl_type_t = typename glsl_type<T>::type;
+
    namespace detail {
       template <GLenum Kind>
       constexpr bool is_texture_type_v = Kind == gl::TEXTURE_1D || Kind == gl::TEXTURE_2D ||

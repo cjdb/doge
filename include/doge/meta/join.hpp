@@ -1,5 +1,5 @@
 //
-//  Copyright 2018 Christopher Di Bella
+//  Copyright 2017 Christopher Di Bella
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,18 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef DOGE_GL_HPP
-#define DOGE_GL_HPP
+#ifndef DOGE_META_JOIN_HPP
+#define DOGE_META_JOIN_HPP
 
-#include "doge/gl/cast.hpp"
-#include "doge/gl/gl_error.hpp"
-#include "doge/gl/shader_binary.hpp"
-#include "doge/gl/shader_source.hpp"
-#include "doge/gl/texture.hpp"
-#include "doge/gl/uniform.hpp"
-#include "doge/gl/vertex_array.hpp"
+namespace doge::meta {
+   template <typename... Ts>
+   struct join;
 
-#include "doge/glm/matrix.hpp"
-#include "doge/glm/vec.hpp"
+   template <typename T>
+   struct join<T> {
+      using type = T;
+   };
 
-#endif // DOGE_GL_HPP
+   template <typename... Ts>
+   using join_t = typename join<Ts...>::type;
+} // namespace doge::meta
+
+#endif // DOGE_META_JOIN_HPP

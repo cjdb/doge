@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "../../static_objects.hpp"
 #include <gl/gl_core.hpp>
 #include "doge/engine.hpp"
 #include "doge/gl/vertex_array.hpp"
@@ -20,21 +21,35 @@
 #include "doge/gl/shader_source.hpp"
 #include "doge/utility/screen_data.hpp"
 #include "doge/hid.hpp"
+#include "doge/types.hpp"
 #include <experimental/ranges/concepts>
-#include <glm/vec3.hpp>
-#include "../../static_objects.hpp"
 #include <vector>
 
 using std::experimental::ranges::Regular;
 
+void debug_messaging(GLenum const source, GLenum const type, GLuint const id, GLenum const severity,
+   GLsizei const length, GLchar const* const message,  void const* const) {
+    std::cerr << (type == gl::DEBUG_TYPE_ERROR ? "OpenGL error:\n" : "")
+      << "\tsource: " << std::hex << source << "\n"
+         "\tid: " << id << "\n"
+         "\ttype: " << type << "\n"
+         "\tseverity: " << severity << "\n"
+         "\tlength: " << length << "\n"
+         "\tmessage: \"" << message << "\"\n"
+      << std::dec;
+}
+
 int main()
 {
    auto engine = doge::engine{};
+   gl::Enable(gl::DEBUG_OUTPUT);
+   gl::DebugMessageCallback(debug_messaging, nullptr);
+
    auto program = doge::shader_binary{{
       std::make_pair(doge::shader_source::vertex, "attributes.vert.glsl"),
       std::make_pair(doge::shader_source::fragment, "attributes.frag.glsl")}};
 
-   auto v = doge::vertex{gl::ARRAY_BUFFER, gl::STATIC_DRAW, coloured_triangle, 6, {3, 3}};
+   auto v = doge::make_vertex_array_buffer(coloured_triangle);
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -43,9 +58,7 @@ int main()
       gl::Clear(gl::COLOR_BUFFER_BIT);
 
       program.use([&v]{
-         v.bind([&v]{
-            v.draw(doge::vertex::triangles, 0, 3);
-         });
+         v.draw([]{});
       });
    });
 }

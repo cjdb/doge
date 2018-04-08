@@ -37,10 +37,13 @@ int main()
            std::make_pair(doge::shader_source::fragment, "yellow.glsl")}}
    };
 
-   auto vbo = std::vector<doge::vertex>{
-      {gl::ARRAY_BUFFER, gl::STATIC_DRAW, triangle[0], 3, {3}},
-      {gl::ARRAY_BUFFER, gl::STATIC_DRAW, triangle[1], 3, {3}}
-   };
+   auto vbo = []{
+      auto result = std::vector<doge::vertex_array_buffer<doge::basic_buffer_usage::static_draw,
+         doge::vec3>>{};
+      result.emplace_back(triangle[0]);
+      result.emplace_back(triangle[1]);
+      return result;
+   }();
 
    engine.play([&]{
       doge::hid::on_key_press<doge::hid::keyboard>(GLFW_KEY_ESCAPE, [&engine]{ engine.close(); });
@@ -51,9 +54,7 @@ int main()
       using std::experimental::ranges::Integral;
       for (Integral i = decltype(vbo.size()){}; i != vbo.size() && i != shaders.size(); ++i) {
          shaders[i].use([i, &vbo]{
-            vbo[i].bind([i, &vbo]{
-               vbo[i].draw(doge::vertex::triangles, 0, 3);
-            });
+            vbo[i].draw([]{});
          });
       }
    });
