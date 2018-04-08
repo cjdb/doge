@@ -1,5 +1,16 @@
 file(COPY resources DESTINATION "${CMAKE_BINARY_DIR}")
 
+### add_example(filename)
+function(add_example filename)
+   string(REGEX REPLACE ".*[/]${PROJECT_NAME}" "${PROJECT_NAME}"
+      program_name "${CMAKE_CURRENT_SOURCE_DIR}")
+   string(REGEX REPLACE "[/]" "." program_name ${program_name})
+   set(program_name "${program_name}.${filename}")
+   add_executable("${program_name}" "${filename}.cpp")
+   link_core("${program_name}")
+   copy_shaders()
+endfunction()
+
 add_subdirectory(hello-triangle)
 add_subdirectory(shaders)
 add_subdirectory(textures)

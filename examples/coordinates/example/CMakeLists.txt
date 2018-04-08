@@ -1,4 +1,1 @@
-add_executable(coordinates.example example.cpp)
-link_core(coordinates.example)
-
-copy_shaders()
+add_example(example)
