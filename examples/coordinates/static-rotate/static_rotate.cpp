@@ -64,7 +64,7 @@ int main()
                Regular result = glm::mat4{1.0f}
                               | doge::translate(cube_positions[i]);
                if (i % 3 == 0) {
-                  const Regular angle = doge::angle{glm::radians(doge::glfw_time() * -50.0f)};
+                  const Regular angle = doge::as_radians(doge::glfw_time() * -50.0f);
                   return result
                      | doge::rotate(angle, {0.5f, 1.0f, 0.5f});
                }

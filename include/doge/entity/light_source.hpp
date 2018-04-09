@@ -147,7 +147,7 @@ namespace doge {
       public:
          explicit lighting_impl(vec3 const& position, vec3 const& ambient, vec3 const& diffuse,
             vec3 const& specular, GLfloat const constant, float const linear, float const quadratic,
-            vec3 const& direction, angle const inner_cutoff, angle const outer_cutoff,
+            vec3 const& direction, radians const inner_cutoff, radians const outer_cutoff,
             vec3 const& colour = unit<vec3>)
             : lighting_impl<light_type::point>{position, ambient, diffuse, specular, constant,
                  linear, quadratic, colour},
@@ -166,29 +166,29 @@ namespace doge {
             direction_ = d;
          }
 
-         angle inner_cutoff() const noexcept
+         radians inner_cutoff() const noexcept
          {
             return inner_cutoff_;
          }
 
-         void inner_cutoff(angle const a) noexcept
+         void inner_cutoff(radians const a) noexcept
          {
             inner_cutoff_ = a;
          }
 
-         angle outer_cutoff() const noexcept
+         radians outer_cutoff() const noexcept
          {
             return outer_cutoff_;
          }
 
-         void outer_cutoff(angle const a) noexcept
+         void outer_cutoff(radians const a) noexcept
          {
             outer_cutoff_ = a;
          }
       private:
          vec3 direction_;
-         angle inner_cutoff_;
-         angle outer_cutoff_;
+         radians inner_cutoff_;
+         radians outer_cutoff_;
       };
 
       template <detail::light_type Light>

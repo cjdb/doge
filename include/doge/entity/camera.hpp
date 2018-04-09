@@ -40,7 +40,7 @@ namespace doge {
          return glm::lookAt(position(), direction() + position(), up);
       }
 
-      void field_of_view(angle const a) noexcept
+      void field_of_view(radians const a) noexcept
       {
          field_of_view_ = std::clamp(field_of_view() + a, 1.0_deg, 45.0_deg);
       }
@@ -51,7 +51,7 @@ namespace doge {
          pitch(doge::as_radians(-delta.y));
       }
 
-      angle field_of_view() const noexcept
+      radians field_of_view() const noexcept
       {
          return field_of_view_;
       }
@@ -59,11 +59,11 @@ namespace doge {
       [[nodiscard]] mat4 project(float const aspect_ratio, float const min_view,
          const float max_view) noexcept
       {
-         return glm::perspective(gsl::narrow_cast<float>(field_of_view_), aspect_ratio, min_view,
+         return glm::perspective(::doge::dimensionless_cast(field_of_view_), aspect_ratio, min_view,
             max_view);
       }
    private:
-      angle field_of_view_ = 45.0_deg;
+      radians field_of_view_ = 45.0_deg;
    };
 } // namespace doge
 

@@ -107,6 +107,12 @@ if (NOT ${DOGE_CATCH2_PATH} EQUAL "")
    include_directories("${DOGE_CATCH2_PATH}/include")
 endif()
 
+if (NOT ${DOGE_BOOST_PATH} EQUAL "")
+   include_directories("${DOGE_BOOST_PATH}")
+endif()
+
+message(STATUS "Boost path: ${DOGE_BOOST_PATH}")
+
 include_directories("${CMAKE_BINARY_DIR}/scope_guard/workspace/P0052_scope_exit/src")
 message(STATUS "Catch2 path: ${DOGE_CATCH2_PATH}")
 

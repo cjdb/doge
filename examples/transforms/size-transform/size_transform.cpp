@@ -65,7 +65,7 @@ int main()
          {
             transform = glm::mat4(1.0f)
                       | doge::translate({0.5f, -0.5f, 0.0f})
-                      | doge::rotate(doge::angle{time}, {0.0f, 0.0f, 1.0f})
+                      | doge::rotate(doge::as_radians(time), {0.0f, 0.0f, 1.0f})
                       | doge::scale({0.5f, 0.5f, 0.5f});
             vbo[0].draw([]{});
          }

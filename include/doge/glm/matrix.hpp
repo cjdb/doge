@@ -25,7 +25,7 @@ namespace doge {
       return detail::translate_impl<vec3>{v};
    }
 
-   constexpr auto rotate(const angle a, const vec3& v) noexcept
+   constexpr auto rotate(const radians a, const vec3& v) noexcept
    {
       return detail::rotate_impl<vec3>{a, v};
    }

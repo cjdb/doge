@@ -42,7 +42,7 @@ namespace doge::detail {
    template <typename T>
    class rotate_impl {
    public:
-      explicit constexpr rotate_impl(const angle a, const T& v) noexcept
+      explicit constexpr rotate_impl(const radians a, const T& v) noexcept
          : angle_{a},
             v_{v}
       {}
@@ -52,10 +52,10 @@ namespace doge::detail {
 
       friend auto operator|(const glm::mat4& m, rotate_impl&& r) noexcept
       {
-         return glm::rotate(m, static_cast<GLfloat>(r.angle_), r.v_);
+         return glm::rotate(m, dimensionless_cast(r.angle_), r.v_);
       }
    private:
-      angle angle_;
+      radians angle_;
       T v_;
    };
 
